@@ -1,6 +1,5 @@
 package harmony.proto;
-import harmony.proto.database.db_config;
-import harmony.proto.database.connection_manager;
+import harmony.proto.database.*;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -15,6 +14,8 @@ import javax.sql.DataSource;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class WebSocketServer {
 
@@ -34,15 +35,21 @@ public class WebSocketServer {
         connection_manager.init(db_conf);
 
         DataSource ds = connection_manager.getDataSource();
-        try {
-            PreparedStatement statement =  ds.getConnection().prepareStatement("select * from hm_user");
-            ResultSet rs = statement.executeQuery();
-            while(rs.next()){
-                System.out.println(rs.getString("username") + ' ' + rs.getString("pass"));
-            }
-        }catch (SQLException e){
-            System.out.println("Caught SQLexception" + e.getMessage());
-        }
+//        try {
+//            PreparedStatement statement =  ds.getConnection().prepareStatement("select * from hm_user");
+//            ResultSet rs = statement.executeQuery();
+//            while(rs.next()){
+//                System.out.println(rs.getString("username") + ' ' + rs.getString("pass"));
+//            }
+//        }catch (SQLException e){
+//            System.out.println("Caught SQLexception" + e.getMessage());
+//        }
+        UserDao userDao = new UserDao(ds);
+        System.out.println(userDao.existsById(4L));
+        ChatDao chatDao = new ChatDao(ds);
+        List<Chat> chats = new ArrayList<Chat>();
+        chats = chatDao.findUserChats(1);
+        System.out.println(chats.get(0).getChatName());
 
         System.out.println("Connceted to DB!\n");
 
@@ -74,6 +81,7 @@ public class WebSocketServer {
             // Shut down all event loops to terminate all threads.
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
+            connection_manager.shutdown();
         }
     }
 
