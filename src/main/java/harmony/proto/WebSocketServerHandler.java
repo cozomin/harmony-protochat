@@ -19,6 +19,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
     private static final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE); // just for 1 group chat
     // 1 Channel = 1 Connection to a Client => ChannelGroup = multiple connections to different clients
     private static Map<Integer, ChannelGroup> channelGroupMap = new ConcurrentHashMap<>(); // a collection of group chats
+    //to be used for multiple groups or something idk
 
     // When someone is added to the server
     @Override
@@ -46,7 +47,9 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
     //TODO: Handling WebSocket message fragmentation and continuation
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception{ // Second parameter can be WebSocketFrame and then switch/if elses to verify the data type
+    protected void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception{
+        // Second parameter can be WebSocketFrame and then switch/if elses to verify the data type
+
         Channel incoming = ctx.channel(); // The specific connection to a client
         String messageText = msg.text(); // Client message
 
@@ -58,6 +61,8 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                 channel.writeAndFlush(new TextWebSocketFrame("[you] " + messageText));
             }
         }
+        //resource release not necessary, using SimpleHandler
+        //NOTE: shouldn’t store references to any messages for later use, as these will become invalid.
     }
 
     @Override
