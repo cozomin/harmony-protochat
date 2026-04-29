@@ -9,6 +9,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.nio.NioIoHandle;
 import io.netty.channel.nio.NioIoHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import io.netty.util.concurrent.EventExecutorGroup;
 
 import javax.sql.DataSource;
 import java.sql.PreparedStatement;
@@ -29,12 +31,12 @@ public class WebSocketServer {
      * @see <a href="https://github.com/netty/netty/wiki/Netty-4.2-Migration-Guide#new-best-practices">Migration guide</a>
      */
     public void start() throws InterruptedException, SQLException {
-        db_config db_conf = new db_config("jdbc:postgresql://localhost:5432/harmony", "postgres",
-                    "SQLpa55", 4);
-
-        connection_manager.init(db_conf);
-
-        DataSource ds = connection_manager.getDataSource();
+//        db_config db_conf = new db_config("jdbc:postgresql://localhost:5432/harmony", "postgres",
+//                    "SQLpa55", 4);
+//
+//        connection_manager.init(db_conf);
+//
+//        DataSource ds = connection_manager.getDataSource();
 //        try {
 //            PreparedStatement statement =  ds.getConnection().prepareStatement("select * from hm_user");
 //            ResultSet rs = statement.executeQuery();
@@ -44,12 +46,12 @@ public class WebSocketServer {
 //        }catch (SQLException e){
 //            System.out.println("Caught SQLexception" + e.getMessage());
 //        }
-        UserDao userDao = new UserDao(ds);
-        System.out.println(userDao.existsById(4L));
-        ChatDao chatDao = new ChatDao(ds);
-        List<Chat> chats = new ArrayList<Chat>();
-        chats = chatDao.findUserChats(1);
-        System.out.println(chats.get(0).getChatName());
+//        UserDao userDao = new UserDao(ds);
+//        System.out.println(userDao.existsById(4L));
+//        ChatDao chatDao = new ChatDao(ds);
+//        List<Chat> chats = new ArrayList<Chat>();
+//        chats = chatDao.findUserChats(1);
+//        System.out.println(chats.get(0).getChatName());
 
         System.out.println("Connceted to DB!\n");
 
@@ -57,9 +59,11 @@ public class WebSocketServer {
         // EventLoopGroup bossGroup = new NioEventLoopGroup(1); - NioEventLoopGroup is deprecated in Netty 4.2
 
         // The boss accepts an incoming connection
-        EventLoopGroup bossGroup = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
+        final EventLoopGroup bossGroup = new MultiThreadIoEventLoopGroup(1, NioIoHandler.newFactory());
         // The worker handles the traffic of the accepted connection
-        EventLoopGroup workerGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
+        final EventLoopGroup workerGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
+        // The database executor manages the connection in a separate thread group from the rest
+        final EventExecutorGroup dbGroup = new DefaultEventExecutorGroup(16);
 
         try {
             ServerBootstrap b = new ServerBootstrap();

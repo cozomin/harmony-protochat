@@ -63,7 +63,7 @@ public class ChatDao {
                     }
                     else {
                         //if it's a DM, gives chat the name of the other user
-                        chat.setChatName(findDmName(chat.getChatID(), userID));
+                        chat.setChatName(findDmName(userID, chat.getChatID()));
                     }
                     chats.add(chat);
                 }

@@ -7,10 +7,17 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.util.concurrent.EventExecutorGroup;
 
 import java.util.concurrent.TimeUnit;
 
 public class WebSocketServerInitializer extends ChannelInitializer<SocketChannel> {
+//    private final EventExecutorGroup dbGroup;
+//
+//    public WebSocketServerInitializer(EventExecutorGroup dbGroup) {
+//        this.dbGroup = dbGroup;
+//    }
+
     @Override
     protected void initChannel(SocketChannel ch) {
         ChannelPipeline pipeline = ch.pipeline();
@@ -22,7 +29,10 @@ public class WebSocketServerInitializer extends ChannelInitializer<SocketChannel
         // 3. Handle WebSocket handshake and control frames (Ping/Pong/Close) on the "/chat" endpoint
         pipeline.addLast(new WebSocketServerProtocolHandler("/chat"));
         // 4. We trigger an event if no traffic flows in either direction for 50 seconds.
+        // TODO: Move to client
         pipeline.addLast(new IdleStateHandler(0, 0, 50, TimeUnit.SECONDS));
+
+        pipeline.addLast(new JsonChatMessageDecoder());
         // 5. Our custom handler for chat messages
         pipeline.addLast(new WebSocketServerHandler());
         //assigns our handler to the channel that has just been created, triggering handlerAdded

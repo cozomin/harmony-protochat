@@ -16,7 +16,7 @@ public class MessageDao {
     public Message save(Message message) throws SQLException {
         String insertMessage = """
                 insert into hm_message(senderID, chatID, message_content, sent_at, message_type)
-                values (?, ?, ?, ?, ?)
+                values (?, ?, ?, ?, ?::mess_enum)
                 returning messID
                 """;
         //message with parameters

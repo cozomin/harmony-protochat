@@ -15,11 +15,11 @@ public final class connection_manager {
         }
 
         HikariConfig hikari = new HikariConfig();
-        hikari.setJdbcUrl(config.getJdbcUrl());
-        hikari.setUsername(config.getUsername());
-        hikari.setPassword(config.getPassword());
+        hikari.setJdbcUrl(config.jdbcUrl());
+        hikari.setUsername(config.username());
+        hikari.setPassword(config.password());
         hikari.setDriverClassName("org.postgresql.Driver");
-        hikari.setMaximumPoolSize(config.getMaximumPoolSize());
+        hikari.setMaximumPoolSize(config.maximumPoolSize());
         hikari.setMinimumIdle(2);
         hikari.setConnectionTimeout(10000);
         hikari.setIdleTimeout(600000);

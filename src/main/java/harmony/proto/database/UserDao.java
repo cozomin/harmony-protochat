@@ -25,12 +25,12 @@ public class UserDao {
         //if query returns nothing, function returns FALSE
     }
 
-    public boolean login(Long userID, String pass) throws SQLException{
+    public boolean login(String username, String pass) throws SQLException{
         //checks if userID has inserted correct password
-        String sql = "select 1 from hm_user where userID = ? and pass = ?";
+        String sql = "select 1 from hm_user where username = ? and pass = ?";
         try(Connection con = dataSource.getConnection();
             PreparedStatement ps = con.prepareStatement(sql);){
-            ps.setLong(1, userID);
+            ps.setString(1, username);
             ps.setString(2, pass);
             try(ResultSet rs = ps.executeQuery()){
                 return rs.next();

@@ -1,5 +1,8 @@
-package harmony.proto;
+package harmony.proto.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import harmony.proto.database.Message;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -27,13 +30,14 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.time.Instant;
 
 /**
  * The client will attempt to connect to the URI passed to it as the first argument.
  * You don't have to specify any arguments if you want to connect to the example WebSocket server,
  * as this is the default.
  */
-public final class WebSocketClientEXAMPLE {
+public final class WebSocketClient {
     /** A URL is made of protocol, domain name, path: [scheme:][//authority][path][?query][#fragment]
      * @see <a href = "https://mailchimp.com/resources/uri-vs-url/">URL vs URI</a>
      */
@@ -77,8 +81,8 @@ public final class WebSocketClientEXAMPLE {
             // Connect with V13 (RFC 6455 aka HyBi-17). You can change it to V08 or V00.
             // If you change it to V00, ping is not supported and remember to change
             // HttpResponseDecoder to WebSocketHttpResponseDecoder in the pipeline.
-            final WebSocketClientHandlerEXAMPLE handler =
-                    new WebSocketClientHandlerEXAMPLE(
+            final WebSocketClientHandler handler =
+                    new WebSocketClientHandler(
                             WebSocketClientHandshakerFactory.newHandshaker(
                                     uri, WebSocketVersion.V13, null, true, new DefaultHttpHeaders()));
 
@@ -103,20 +107,33 @@ public final class WebSocketClientEXAMPLE {
             Channel ch = b.connect(uri.getHost(), port).sync().channel();
             handler.handshakeFuture().sync();
 
+            ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+
             BufferedReader console = new BufferedReader(new InputStreamReader(System.in));
             while (true) {
-                String msg = console.readLine();
-                if (msg == null) {
+                String input = console.readLine();
+                if (input == null) {
                     break;
-                } else if ("bye".equals(msg.toLowerCase())) {
+                } else if ("bye".equals(input.toLowerCase())) {
                     ch.writeAndFlush(new CloseWebSocketFrame());
                     ch.closeFuture().sync();
                     break;
-                } else if ("ping".equals(msg.toLowerCase())) {
+                } else if ("ping".equals(input.toLowerCase())) {
                     WebSocketFrame frame = new PingWebSocketFrame(Unpooled.wrappedBuffer(new byte[] { 8, 1, 8, 1 }));
                     ch.writeAndFlush(frame);
                 } else {
-                    WebSocketFrame frame = new TextWebSocketFrame(msg);
+                    Message messageObject = new Message();
+                    messageObject.setContent(input);
+                    messageObject.setSenderId(1L); // test senderID
+                    messageObject.setChatId(1L);   // test chatID
+                    messageObject.setSentAt(Instant.now());
+                    messageObject.setMessageType("regular");
+
+                    //Converts Message to JSON for transport
+                    String jsonMsg = mapper.writeValueAsString(messageObject);
+
+                    //Sends the json through a textwebsocketframe
+                    WebSocketFrame frame = new TextWebSocketFrame(jsonMsg);
                     ch.writeAndFlush(frame);
                 }
             }
