@@ -1,4 +1,6 @@
-package harmony.proto.database;
+package harmony.proto.dao;
+
+import harmony.proto.dto.MessageDTO;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -13,7 +15,7 @@ public class MessageDao {
         this.dataSource = dataSource;
     }
 
-    public Message save(Message message) throws SQLException {
+    public MessageDTO save(MessageDTO messageDTO) throws SQLException {
         String insertMessage = """
                 insert into hm_message(senderID, chatID, message_content, sent_at, message_type)
                 values (?, ?, ?, ?, ?::mess_enum)
@@ -26,31 +28,31 @@ public class MessageDao {
             con.setAutoCommit(false);
             //set message parameters
             try (PreparedStatement ps = con.prepareStatement(insertMessage)) {
-                ps.setLong(1, message.getSenderId());
-                ps.setLong(2, message.getChatId());
-                ps.setString(3, message.getContent());
-                ps.setTimestamp(4, Timestamp.from(message.getSentAt()));
-                ps.setString(5, message.getMessageType());
+                ps.setLong(1, messageDTO.getSenderId());
+                ps.setLong(2, messageDTO.getChatId());
+                ps.setString(3, messageDTO.getContent());
+                ps.setTimestamp(4, Timestamp.from(messageDTO.getSentAt()));
+                ps.setString(5, messageDTO.getMessageType());
 
                 try (ResultSet rs = ps.executeQuery()) {
                     if (rs.next()) {
-                        message.setMessId(rs.getLong("messID"));
+                        messageDTO.setMessId(rs.getLong("messID"));
                     }
                 }
             }
             //set updated_at for the respective chat
             try (PreparedStatement ps = con.prepareStatement(updateChat)) {
-                ps.setTimestamp(1, Timestamp.from(message.getSentAt()));
-                ps.setLong(2, message.getChatId());
+                ps.setTimestamp(1, Timestamp.from(messageDTO.getSentAt()));
+                ps.setLong(2, messageDTO.getChatId());
                 ps.executeUpdate();
             }
 
             con.commit();
-            return message;
+            return messageDTO;
         }
     }
 
-    public List<Message> findRecentMessages(Long chatId, int limit) throws SQLException {
+    public List<MessageDTO> findRecentMessages(Long chatId, int limit) throws SQLException {
         String sql = """
                 select messID, senderID, chatID, message_content, sent_at, message_type
                 from hm_message
@@ -59,7 +61,7 @@ public class MessageDao {
                 limit ?
                 """;
 
-        List<Message> messages = new ArrayList<>();
+        List<MessageDTO> messageDTOS = new ArrayList<>();
 
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -68,7 +70,7 @@ public class MessageDao {
 
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Message m = new Message();
+                    MessageDTO m = new MessageDTO();
                     m.setMessId(rs.getLong("messID"));
                     m.setSenderId(rs.getLong("senderID"));
                     m.setChatId(rs.getLong("chatID"));
@@ -76,12 +78,12 @@ public class MessageDao {
                     Timestamp ts = rs.getTimestamp("sent_at");
                     m.setSentAt(ts == null ? Instant.now() : ts.toInstant());
                     m.setMessageType(rs.getString("message_type"));
-                    messages.add(m);
+                    messageDTOS.add(m);
                 }
             }
         }
 
-        messages.sort((a, b) -> a.getSentAt().compareTo(b.getSentAt()));
-        return messages;
+        messageDTOS.sort((a, b) -> a.getSentAt().compareTo(b.getSentAt()));
+        return messageDTOS;
     }
 }

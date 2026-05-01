@@ -1,4 +1,6 @@
-package harmony.proto.database;
+package harmony.proto.dao;
+
+import harmony.proto.dto.ChatDTO;
 
 import javax.sql.DataSource;
 import java.sql.*;
@@ -41,35 +43,35 @@ public class ChatDao {
         return ids;
     }
 
-    public List<Chat> findUserChats(long userID) throws SQLException{
+    public List<ChatDTO> findUserChats(long userID) throws SQLException{
         //selects all chats that userID is a member of
         String sql = "select chatID, chatName, isGroup, updated_at\n" +
                 "from chat join chat_member using (chatID)\n" +
                 "where memberID = ?;";
-        List<Chat> chats = new ArrayList<>();
+        List<ChatDTO> chatDTOS = new ArrayList<>();
 
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setLong(1, userID);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Chat chat = new Chat();
-                    chat.setChatID(rs.getLong("chatID"));
-                    chat.setGroup(rs.getBoolean("isGroup"));
+                    ChatDTO chatDTO = new ChatDTO();
+                    chatDTO.setChatID(rs.getLong("chatID"));
+                    chatDTO.setGroup(rs.getBoolean("isGroup"));
 //                    chat.setUpdated_at(rs.getTimestamp("updated_at").toInstant());
                     //updated_at is not yet implemented, if null will crash server
-                    if(chat.isGroup()){
-                        chat.setChatName(rs.getString("chatName"));
+                    if(chatDTO.isGroup()){
+                        chatDTO.setChatName(rs.getString("chatName"));
                     }
                     else {
                         //if it's a DM, gives chat the name of the other user
-                        chat.setChatName(findDmName(userID, chat.getChatID()));
+                        chatDTO.setChatName(findDmName(userID, chatDTO.getChatID()));
                     }
-                    chats.add(chat);
+                    chatDTOS.add(chatDTO);
                 }
             }
         }
-        return chats;
+        return chatDTOS;
     }
 
     private String findDmName(long userID, long chatID) throws SQLException{

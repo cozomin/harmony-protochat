@@ -1,16 +1,19 @@
-package harmony.proto.database;
+package harmony.proto.dto;
+
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import java.time.Instant;
 
-public class Chat {
+//@JsonPropertyOrder({ "type", "ChatDTO" })
+public class ChatDTO extends BaseDTO {
     private Long chatID;
     private String chatName;
     private boolean isGroup;
     private Instant updated_at;
 
-    public Chat() {}
+    public ChatDTO() {}
 
-    public Chat(Long chatID, String chatName, boolean isGroup, Instant updated_at) {
+    public ChatDTO(Long chatID, String chatName, boolean isGroup, Instant updated_at) {
         this.chatID = chatID;
         this.chatName = chatName;
         this.isGroup = isGroup;

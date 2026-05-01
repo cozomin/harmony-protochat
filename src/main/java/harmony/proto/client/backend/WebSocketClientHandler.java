@@ -35,11 +35,11 @@
 //OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 //THE SOFTWARE.
 
-package harmony.proto.client;
+package harmony.proto.client.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import harmony.proto.database.Message;
+import harmony.proto.dto.MessageDTO;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -126,11 +126,11 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
             try {
                 // Parsăm JSON-ul primit în obiectul tău Message
-                Message message = mapper.readValue(jsonContent, Message.class);
+                MessageDTO messageDTO = mapper.readValue(jsonContent, MessageDTO.class);
 
                 // Exemplu: Logica de afișare/procesare
-                System.out.println("[" + message.getSentAt() + "] " +
-                        message.getSenderId() + ": " + message.getContent());
+                System.out.println("[" + messageDTO.getSentAt() + "] " +
+                        messageDTO.getSenderId() + ": " + messageDTO.getContent());
 
                 // NOTĂ: Dacă acest CLIENT trebuie să salveze și el în DB (ex: cache local),
                 // aici poți apela o metodă de salvare asincronă.

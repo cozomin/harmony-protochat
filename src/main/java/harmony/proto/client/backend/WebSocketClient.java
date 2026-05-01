@@ -1,8 +1,8 @@
-package harmony.proto.client;
+package harmony.proto.client.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import harmony.proto.database.Message;
+import harmony.proto.dto.MessageDTO;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -122,15 +122,15 @@ public final class WebSocketClient {
                     WebSocketFrame frame = new PingWebSocketFrame(Unpooled.wrappedBuffer(new byte[] { 8, 1, 8, 1 }));
                     ch.writeAndFlush(frame);
                 } else {
-                    Message messageObject = new Message();
-                    messageObject.setContent(input);
-                    messageObject.setSenderId(1L); // test senderID
-                    messageObject.setChatId(1L);   // test chatID
-                    messageObject.setSentAt(Instant.now());
-                    messageObject.setMessageType("regular");
+                    MessageDTO messageDTOObject = new MessageDTO();
+                    messageDTOObject.setContent(input);
+                    messageDTOObject.setSenderId(1L); // test senderID
+                    messageDTOObject.setChatId(1L);   // test chatID
+                    messageDTOObject.setSentAt(Instant.now());
+                    messageDTOObject.setMessageType("regular");
 
                     //Converts Message to JSON for transport
-                    String jsonMsg = mapper.writeValueAsString(messageObject);
+                    String jsonMsg = mapper.writeValueAsString(messageDTOObject);
 
                     //Sends the json through a textwebsocketframe
                     WebSocketFrame frame = new TextWebSocketFrame(jsonMsg);

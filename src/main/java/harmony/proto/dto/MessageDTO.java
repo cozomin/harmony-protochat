@@ -1,8 +1,8 @@
-package harmony.proto.database;
+package harmony.proto.dto;
 
 import java.time.Instant;
 
-public class Message {
+public class MessageDTO extends BaseDTO {
     private Long messId;
     private Long senderId;
     private Long chatId;
@@ -10,9 +10,9 @@ public class Message {
     private Instant sentAt;
     private String messageType;
 
-    public Message() {}
+    public MessageDTO() {}
 
-    public Message(Long messId, Long senderId, Long chatId, String content, Instant sentAt, String messageType) {
+    public MessageDTO(Long messId, Long senderId, Long chatId, String content, Instant sentAt, String messageType) {
         this.messId = messId;
         this.senderId = senderId;
         this.chatId = chatId;
