@@ -76,8 +76,8 @@ public class ChatDao {
 
     private String findDmName(long userID, long chatID) throws SQLException{
         String sql = "select username \n" +
-                    "from chat_member join hm_user on (userID = memberID) \n" +
-                    "where chatID = ? and userID != ?";
+                "from chat_member join hm_user on (userID = memberID) \n" +
+                "where chatID = ? and userID != ?";
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setLong(1, chatID);

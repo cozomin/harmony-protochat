@@ -1,5 +1,7 @@
 package harmony.proto.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class LoginRes extends BaseDTO{
     private String message;
     private Long UserID;
@@ -18,5 +20,10 @@ public class LoginRes extends BaseDTO{
 
     public void setUserID(Long userID) {
         UserID = userID;
+    }
+
+    @JsonIgnore
+    public boolean isSuccess() {
+        return UserID != null && UserID != -1;
     }
 }

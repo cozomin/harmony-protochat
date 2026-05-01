@@ -1,44 +1,10 @@
-/*
- * Copyright 2012 The Netty Project
- *
- * The Netty Project licenses this file to you under the Apache License,
- * version 2.0 (the "License"); you may not use this file except in compliance
- * with the License. You may obtain a copy of the License at:
- *
- *   https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- * License for the specific language governing permissions and limitations
- * under the License.
- */
-//The MIT License
-//
-//Copyright (c) 2009 Carl Bystršm
-//
-//Permission is hereby granted, free of charge, to any person obtaining a copy
-//of this software and associated documentation files (the "Software"), to deal
-//in the Software without restriction, including without limitation the rights
-//to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-//copies of the Software, and to permit persons to whom the Software is
-//furnished to do so, subject to the following conditions:
-//
-//The above copyright notice and this permission notice shall be included in
-//all copies or substantial portions of the Software.
-//
-//THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-//IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-//FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-//AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-//LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-//OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-//THE SOFTWARE.
-
 package harmony.proto.client.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import harmony.proto.dto.BaseDTO;
+import harmony.proto.dto.LoginRes;
+import harmony.proto.dto.LoginReq;
 import harmony.proto.dto.MessageDTO;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -54,6 +20,8 @@ import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketHandshakeException;
 import io.netty.util.CharsetUtil;
 
+import java.util.concurrent.CompletableFuture;
+
 public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
 
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -62,12 +30,41 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private final WebSocketClientHandshaker handshaker;
     private ChannelPromise handshakeFuture;
 
+    private volatile boolean authenticated = false;
+    private volatile Long currentUserId;
+    private volatile String loginFailureReason;
+
+    private volatile CompletableFuture<LoginRes> loginFuture = new CompletableFuture<>();
+
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
     }
 
     public ChannelFuture handshakeFuture() {
         return handshakeFuture;
+    }
+
+    public boolean isAuthenticated() {
+        return authenticated;
+    }
+
+    public Long getCurrentUserId() {
+        return currentUserId;
+    }
+
+    public String getLoginFailureReason() {
+        return loginFailureReason;
+    }
+
+    public synchronized void prepareForLogin() {
+        authenticated = false;
+        currentUserId = null;
+        loginFailureReason = null;
+        loginFuture = new CompletableFuture<>();
+    }
+
+    public LoginRes awaitLoginResponse() throws Exception {
+        return loginFuture.get(5, java.util.concurrent.TimeUnit.SECONDS);
     }
 
     @Override
@@ -86,9 +83,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     }
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
-
+    protected void channelRead0(ChannelHandlerContext ctx, Object msg) throws Exception {
         Channel ch = ctx.channel();
+
         if (!handshaker.isHandshakeComplete()) {
             try {
                 handshaker.finishHandshake(ch, (FullHttpResponse) msg);
@@ -101,43 +98,45 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
             return;
         }
 
-        if (msg instanceof FullHttpResponse) {
-            FullHttpResponse response = (FullHttpResponse) msg;
+        if (msg instanceof FullHttpResponse response) {
             throw new IllegalStateException(
                     "Unexpected FullHttpResponse (getStatus=" + response.status() +
                             ", content=" + response.content().toString(CharsetUtil.UTF_8) + ')');
         }
 
-//        WebSocketFrame frame = (WebSocketFrame) msg;
-//        if (frame instanceof TextWebSocketFrame) {
-//            TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
-//            System.out.println("WebSocket Client received message: " + textFrame.text());
-//        } else if (frame instanceof PongWebSocketFrame) {
-//            System.out.println("WebSocket Client received pong");
-//        } else if (frame instanceof CloseWebSocketFrame) {
-//            System.out.println("WebSocket Client received closing");
-//            ch.close();
-//        }
-
         WebSocketFrame frame = (WebSocketFrame) msg;
-        if (frame instanceof TextWebSocketFrame) {
-            TextWebSocketFrame textFrame = (TextWebSocketFrame) frame;
-            String jsonContent = textFrame.text();
 
+        if (frame instanceof TextWebSocketFrame textFrame) {
             try {
-                // Parsăm JSON-ul primit în obiectul tău Message
-                MessageDTO messageDTO = mapper.readValue(jsonContent, MessageDTO.class);
 
-                // Exemplu: Logica de afișare/procesare
-                System.out.println("[" + messageDTO.getSentAt() + "] " +
-                        messageDTO.getSenderId() + ": " + messageDTO.getContent());
+                String json = textFrame.text();
+                BaseDTO dto = mapper.readValue(json, BaseDTO.class);
 
-                // NOTĂ: Dacă acest CLIENT trebuie să salveze și el în DB (ex: cache local),
-                // aici poți apela o metodă de salvare asincronă.
+                if (dto instanceof MessageDTO messageDTO){
+                    //Message processing goes here
+                }
+
+                else if (dto instanceof LoginRes loginRes) {
+
+                    if (loginRes.isSuccess()) {
+                        authenticated = true;
+                        currentUserId = loginRes.getUserID();
+//                        currentUsername = loginRes.getUsername();
+                        loginFailureReason = null;
+                    } else {
+                        authenticated = false;
+                        loginFailureReason = loginRes.getMessage();
+                    }
+
+                    loginFuture.complete(loginRes);
+                }
 
             } catch (Exception e) {
-                System.err.println("Eroare la parsarea mesajului JSON: " + e.getMessage());
-                System.out.println("Mesaj brut primit: " + jsonContent);
+                System.err.println("JSON parsing Error: " + e.getMessage());
+
+                if (loginFuture != null && !loginFuture.isDone()) {
+                    loginFuture.completeExceptionally(e);
+                }
             }
 
         } else if (frame instanceof PongWebSocketFrame) {
@@ -151,7 +150,10 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         cause.printStackTrace();
-        if (!handshakeFuture.isDone()) {
+        if (loginFuture != null && !loginFuture.isDone()) {
+            loginFuture.completeExceptionally(cause);
+        }
+        if (handshakeFuture != null && !handshakeFuture.isDone()) {
             handshakeFuture.setFailure(cause);
         }
         ctx.close();

@@ -91,7 +91,8 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
     protected void channelRead0(ChannelHandlerContext ctx, TextWebSocketFrame msg) throws Exception {
         // Second parameter can be WebSocketFrame and then switch/if elses to verify the data type
 
-        BaseDTO dto = mapper.readValue((DataInput) msg, BaseDTO.class);
+        String json = msg.text();
+        BaseDTO dto = mapper.readValue(json, BaseDTO.class);
 
         if (dto instanceof MessageDTO messageDTO) {
             String messageText = messageDTO.getContent(); // Client message
@@ -101,9 +102,13 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             }
 
             //save to database on a different thread
-            CompletableFuture.runAsync(() -> {
-                saveToDatabase(messageDTO);
-            }, dbExecutor);
+//            CompletableFuture.runAsync(() -> {
+//                saveToDatabase(messageDTO);
+//            }, dbExecutor);
+
+            //Pass it to the db Handler to save the message in the database
+            ctx.fireChannelRead(messageDTO);
+
             //.thenRun(() -> {
 //                // After storing in database, we send a confirmation on the I/O thread
 //                Message confirm = new Message();
@@ -132,15 +137,10 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         // Notify that chat has been updated?
     }
 
-    //TODO Move the connection logic to...literally anywhere else
-    //TODO: figure out where to move connection logic and how to transmit the DS to here
     private void saveToDatabase(MessageDTO msg) {
-        db_config db_conf = new db_config("jdbc:postgresql://localhost:5432/harmony", "postgres",
-                "SQLpa55", 4);
-
-        connection_manager.init(db_conf);
         DataSource ds = connection_manager.getDataSource();
         MessageDao messageDao = new MessageDao(ds);
+
         try (Connection conn = ds.getConnection();) {
             messageDao.save(msg);
         } catch (SQLException e) {
@@ -149,23 +149,23 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
     }
 
     private LoginRes processLoginReq(LoginReq req) {
-        db_config db_conf = new db_config("jdbc:postgresql://localhost:5432/harmony", "postgres",
-                "SQLpa55", 4);
 
-        connection_manager.init(db_conf);
         DataSource ds = connection_manager.getDataSource();
         UserDao userDao = new UserDao(ds);
         LoginRes res = new LoginRes();
+
         try (Connection conn = ds.getConnection();) {
             if (!userDao.existsByUsername(req.getUsername())) {
                 res.setMessage("Username does not exist");
-                res.setUserID((long) -1);
+//                res.setUserID((long) -1);
+                res.setUserID(null);
                 return res;
             }
             Long userID = userDao.login(req.getUsername(), req.getPassword());
-            if(userID == -1) {
+            if(userID == null || userID == -1) {
                 res.setMessage("Wrong password!");
-                res.setUserID((long) -1);
+//                res.setUserID((long) -1);
+                res.setUserID(null);
                 return res;
             }
             res.setMessage("success");
@@ -195,4 +195,3 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         ctx.close();
     }
 }
-

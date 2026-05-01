@@ -46,6 +46,8 @@ public class WebSocketServer {
 //        chats = chatDao.findUserChats(1);
 //        System.out.println(chats.get(0).getChatName());
 
+        db_config db_conf = new db_config("jdbc:postgresql://localhost:5432/harmony", "postgres", "SQLpa55", 4);
+        connection_manager.init(db_conf);
         System.out.println("Connceted to DB!\n");
 
 
@@ -56,7 +58,7 @@ public class WebSocketServer {
         // The worker handles the traffic of the accepted connection
         final EventLoopGroup workerGroup = new MultiThreadIoEventLoopGroup(NioIoHandler.newFactory());
         // The database executor manages the connection in a separate thread group from the rest
-        final EventExecutorGroup dbGroup = new DefaultEventExecutorGroup(16);
+//        final EventExecutorGroup dbGroup = new DefaultEventExecutorGroup(16);
 
         try {
             ServerBootstrap b = new ServerBootstrap();

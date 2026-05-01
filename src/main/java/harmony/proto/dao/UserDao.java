@@ -29,10 +29,10 @@ public class UserDao {
         String sql = "select 1 from hm_user where username = ?";
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setLong(1, username);
-            try (ResultSet rs = ps.executeQuery()) {
-                return rs.next();
-            }
+                ps.setString(1, username);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return rs.next();
+                }
         }
         //if query returns nothing, function returns FALSE
     }
