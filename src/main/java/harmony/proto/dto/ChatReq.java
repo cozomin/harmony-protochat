@@ -3,6 +3,8 @@ package harmony.proto.dto;
 public class ChatReq extends BaseDTO{
     private Long userID;
 
+    public ChatReq() {}
+
     public ChatReq(Long userID) {
         this.userID = userID;
     }

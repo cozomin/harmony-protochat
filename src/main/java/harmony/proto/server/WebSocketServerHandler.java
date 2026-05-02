@@ -51,7 +51,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         Channel incoming = ctx.channel();
 //        // Broadcast to everyone else that someone joined
 //        channels.writeAndFlush(new TextWebSocketFrame("[SERVER] - " + incoming.remoteAddress() + " has joined!\n"));
-//        channels.add(incoming);
+        channels.add(incoming);
 //
 //        Message systemMsg = new Message();
 //        systemMsg.setContent("[SERVER] - " + incoming.remoteAddress() + " joined");
@@ -69,7 +69,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         Channel incoming = ctx.channel();
         // Broadcast that someone left
 //        channels.writeAndFlush(new TextWebSocketFrame("[SERVER] - " + incoming.remoteAddress() + " has left!\n"));
-//        channels.remove(incoming);
+        channels.remove(incoming);
 //        Message systemMsg = new Message();
 //        systemMsg.setContent("[SERVER] - " + incoming.remoteAddress() + " has left");
 //        systemMsg.setMessageType("SYSTEM");
@@ -103,12 +103,12 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             }
 
             //save to database on a different thread
-//            CompletableFuture.runAsync(() -> {
-//                saveToDatabase(messageDTO);
-//            }, dbExecutor);
+            CompletableFuture.runAsync(() -> {
+                saveToDatabase(messageDTO);
+            }, dbExecutor);
 
             //Pass it to the db Handler to save the message in the database
-            ctx.fireChannelRead(messageDTO);
+//            ctx.fireChannelRead(messageDTO);
 
             //.thenRun(() -> {
 //                // After storing in database, we send a confirmation on the I/O thread
@@ -127,7 +127,22 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 //                ex.printStackTrace();
 //                return null;
 //            });
-        } else if (dto instanceof LoginReq login) {
+
+            try {
+                String jsonm = mapper.writeValueAsString(messageDTO);
+                channels.writeAndFlush(new TextWebSocketFrame(json));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        else if (dto instanceof MessageReq req){
+            MessageRes res = processMessageReq(req);
+            String jsonRes = mapper.writeValueAsString(res);
+            TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+            ctx.channel().writeAndFlush(frame);
+        }
+        else if (dto instanceof LoginReq login) {
             LoginRes res = processLoginReq(login);
             String jsonRes = mapper.writeValueAsString(res);
             TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
@@ -187,6 +202,25 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
         } catch (SQLException e) {
             return new LoginRes("Database failure: " + e.getMessage(), null);
+        }
+    }
+
+    private MessageRes processMessageReq(MessageReq req) {
+        DataSource ds = connection_manager.getDataSource();
+        MessageDao messageDao = new MessageDao(ds);
+        MessageRes res = new MessageRes();
+
+        try {
+            List<MessageDTO> messages = messageDao.findRecentMessages(req.getChatID(), 200);
+
+            if (messages == null || messages.isEmpty()) {
+                return new MessageRes("no messages", 0L, messages);
+            }
+
+            else return new MessageRes("success", (long) messages.size(), messages);
+
+        } catch (SQLException e) {
+            return new MessageRes("Database failure: " + e.getMessage(), null, null);
         }
     }
 

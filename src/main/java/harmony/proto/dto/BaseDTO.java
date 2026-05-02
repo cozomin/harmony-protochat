@@ -17,7 +17,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = LoginReq.class, name = "LoginReq"),
         @JsonSubTypes.Type(value = LoginRes.class, name = "LoginRes"),
         @JsonSubTypes.Type(value = ChatReq.class, name = "ChatReq"),
-        @JsonSubTypes.Type(value = ChatRes.class, name = "ChatRes")
+        @JsonSubTypes.Type(value = ChatRes.class, name = "ChatRes"),
+        @JsonSubTypes.Type(value = MessageReq.class, name = "MessReq"),
+        @JsonSubTypes.Type(value = MessageRes.class, name = "MessRes")
 })
 
 public abstract class BaseDTO {

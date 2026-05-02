@@ -31,9 +31,11 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private volatile boolean authenticated = false;
     private volatile Long currentUserId;
     private volatile String loginFailureReason;
+    private volatile LiveMessageListener liveMessageListener;
 
     private volatile CompletableFuture<LoginRes> loginFuture = new CompletableFuture<>();
     private volatile CompletableFuture<ChatRes> chatFuture = new CompletableFuture<>();
+    private volatile CompletableFuture<MessageRes> messageFuture = new CompletableFuture<>();
 
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
@@ -55,6 +57,10 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         return loginFailureReason;
     }
 
+    public void setLiveMessageListener(LiveMessageListener listener) {
+        this.liveMessageListener = listener;
+    }
+
     public synchronized void prepareForLogin() {
         authenticated = false;
         currentUserId = null;
@@ -66,12 +72,20 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         chatFuture = new CompletableFuture<>();
     }
 
+    public synchronized void prepareForMessages() {
+        messageFuture = new CompletableFuture<>();
+    }
+
     public LoginRes awaitLoginResponse() throws Exception {
         return loginFuture.get(5, TimeUnit.SECONDS);
     }
 
     public ChatRes awaitChatResponse() throws Exception{
         return chatFuture.get(5, TimeUnit.SECONDS);
+    }
+
+    public MessageRes awaitMessageResponse() throws Exception{
+        return messageFuture.get(5, TimeUnit.SECONDS);
     }
 
     @Override
@@ -120,7 +134,14 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                 BaseDTO dto = mapper.readValue(json, BaseDTO.class);
 
                 if (dto instanceof MessageDTO messageDTO){
-                    //Message processing goes here
+                    if (liveMessageListener != null) {
+                        // Pass the live message out of the handler
+                        liveMessageListener.onNewMessage(messageDTO);
+                    }
+                }
+
+                else if (dto instanceof MessageRes messageRes){
+                    messageFuture.complete(messageRes);
                 }
 
                 else if (dto instanceof LoginRes loginRes) {

@@ -1,6 +1,5 @@
 package harmony.proto.client.backend;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import harmony.proto.dto.*;
@@ -24,9 +23,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public final class WebSocketClient {
 
@@ -112,6 +109,7 @@ public final class WebSocketClient {
     }
 
     public boolean login(String username, String password) throws Exception {
+        connect();
         handler.prepareForLogin();
 
         LoginReq loginReq = new LoginReq(username, password);
@@ -127,6 +125,7 @@ public final class WebSocketClient {
     }
 
     public boolean fetchChats() throws Exception {
+        handler.prepareForChats();
         Long userID = handler.getCurrentUserId();
         ChatReq chatReq = new ChatReq(userID);
         String json = mapper.writeValueAsString(chatReq);
@@ -138,6 +137,23 @@ public final class WebSocketClient {
             return true;
         }
         else return false;
+    }
+
+    public List<MessageDTO> fetchMessages(Long chatID) throws Exception {
+        handler.prepareForMessages();
+        Long userID = handler.getCurrentUserId();
+        MessageReq req = new MessageReq(userID, chatID);
+
+        String json = mapper.writeValueAsString(req);
+        channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
+
+        MessageRes res = handler.awaitMessageResponse();
+
+        if(res.isSuccess()){
+            return res.getChatMessages();
+        }
+        return null;
+
     }
 
     public void sendMessage(String input) throws Exception {
@@ -185,5 +201,15 @@ public final class WebSocketClient {
 
     public String getLoginFailureReason() {
         return handler != null ? handler.getLoginFailureReason() : null;
+    }
+
+    public List<ChatDTO> getChats() {
+        return chats;
+    }
+
+    public void setLiveMessageListener(LiveMessageListener listener) {
+        if (handler != null) {
+            handler.setLiveMessageListener(listener);
+        }
     }
 }

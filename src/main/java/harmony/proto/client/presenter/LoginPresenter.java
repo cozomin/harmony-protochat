@@ -62,8 +62,12 @@ public class LoginPresenter {
                 }
 
                 if (success) {
-                   view.clearError();
-                    coordinator.onLoginSuccess();
+                    view.clearError();
+                    try {
+                        coordinator.onLoginSuccess();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
                 } else {
                     String backendMessage = client.getLoginFailureReason();
                     view.showError(

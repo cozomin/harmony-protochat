@@ -25,9 +25,11 @@ public class ClientPresenter {
         mainView.showPane(PaneSelector.LOGIN);
     }
 
-    public void onLoginSuccess() {
+    public void onLoginSuccess() throws Exception{
         chatPresenter.loadSessionInfoIntoChat();
         mainView.showPane(PaneSelector.CHAT);
+        chatPresenter.loadChats();
+
     }
 
     public void onLogout() {
