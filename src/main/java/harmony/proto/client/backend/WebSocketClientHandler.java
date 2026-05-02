@@ -2,10 +2,7 @@ package harmony.proto.client.backend;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import harmony.proto.dto.BaseDTO;
-import harmony.proto.dto.LoginRes;
-import harmony.proto.dto.LoginReq;
-import harmony.proto.dto.MessageDTO;
+import harmony.proto.dto.*;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -21,6 +18,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketHandshakeException;
 import io.netty.util.CharsetUtil;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> {
 
@@ -35,6 +33,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private volatile String loginFailureReason;
 
     private volatile CompletableFuture<LoginRes> loginFuture = new CompletableFuture<>();
+    private volatile CompletableFuture<ChatRes> chatFuture = new CompletableFuture<>();
 
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
@@ -63,8 +62,16 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         loginFuture = new CompletableFuture<>();
     }
 
+    public synchronized void prepareForChats(){
+        chatFuture = new CompletableFuture<>();
+    }
+
     public LoginRes awaitLoginResponse() throws Exception {
-        return loginFuture.get(5, java.util.concurrent.TimeUnit.SECONDS);
+        return loginFuture.get(5, TimeUnit.SECONDS);
+    }
+
+    public ChatRes awaitChatResponse() throws Exception{
+        return chatFuture.get(5, TimeUnit.SECONDS);
     }
 
     @Override
@@ -127,8 +134,10 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                         authenticated = false;
                         loginFailureReason = loginRes.getMessage();
                     }
-
                     loginFuture.complete(loginRes);
+                }
+                else if (dto instanceof ChatRes res){
+                    chatFuture.complete(res);
                 }
 
             } catch (Exception e) {

@@ -4,7 +4,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class LoginRes extends BaseDTO{
     private String message;
-    private Long UserID;
+    private Long userID;
+
+    public LoginRes(){
+        message = null;
+        userID = null;
+    }//needed for Jackson
+
+    public LoginRes(String message, Long userID) {
+        this.message = message;
+        this.userID = userID;
+    }
+
 
     public String getMessage() {
         return message;
@@ -15,15 +26,15 @@ public class LoginRes extends BaseDTO{
     }
 
     public Long getUserID() {
-        return UserID;
+        return userID;
     }
 
     public void setUserID(Long userID) {
-        UserID = userID;
+        this.userID = userID;
     }
 
     @JsonIgnore
     public boolean isSuccess() {
-        return UserID != null && UserID != -1;
+        return userID != null && userID != -1;
     }
 }

@@ -1,10 +1,9 @@
 package harmony.proto.client.backend;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import harmony.proto.dto.LoginReq;
-import harmony.proto.dto.LoginRes;
-import harmony.proto.dto.MessageDTO;
+import harmony.proto.dto.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -26,6 +25,7 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class WebSocketClient {
@@ -39,10 +39,12 @@ public final class WebSocketClient {
     private EventLoopGroup group;
     private Channel channel;
     private WebSocketClientHandler handler;
+    private List<ChatDTO> chats;
 
     private String username;
 
-    public WebSocketClient() {
+    public WebSocketClient() throws Exception{
+        connect();
     }
 
     public synchronized void connect() throws Exception {
@@ -110,7 +112,6 @@ public final class WebSocketClient {
     }
 
     public boolean login(String username, String password) throws Exception {
-        connect();
         handler.prepareForLogin();
 
         LoginReq loginReq = new LoginReq(username, password);
@@ -120,6 +121,20 @@ public final class WebSocketClient {
         LoginRes loginRes = handler.awaitLoginResponse();
         if (loginRes.isSuccess()){
             this.username = username;
+            return true;
+        }
+        else return false;
+    }
+
+    public boolean fetchChats() throws Exception {
+        Long userID = handler.getCurrentUserId();
+        ChatReq chatReq = new ChatReq(userID);
+        String json = mapper.writeValueAsString(chatReq);
+        channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
+
+        ChatRes chatRes = handler.awaitChatResponse();
+        if(chatRes.isSuccess()){
+            chats = chatRes.getChats();
             return true;
         }
         else return false;

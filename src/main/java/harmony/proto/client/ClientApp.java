@@ -21,7 +21,12 @@ public class ClientApp {
         //The event dispatch thread is a special thread that is managed by AWT. Basically, it is a thread that runs in an infinite loop, processing events.
         SwingUtilities.invokeLater(() -> {
             ClientUI ui = new ClientUI();
-            WebSocketClient client = new WebSocketClient();
+            WebSocketClient client = null;
+            try {
+                client = new WebSocketClient();
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
             new ClientPresenter(client, ui);
             ui.setVisible(true);
         });

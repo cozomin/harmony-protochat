@@ -1,10 +1,8 @@
 package harmony.proto.server;
 
+import harmony.proto.dao.ChatDao;
 import harmony.proto.dao.UserDao;
-import harmony.proto.dto.BaseDTO;
-import harmony.proto.dto.LoginReq;
-import harmony.proto.dto.LoginRes;
-import harmony.proto.dto.MessageDTO;
+import harmony.proto.dto.*;
 import harmony.proto.dao.MessageDao;
 import harmony.proto.database.connection_manager;
 import harmony.proto.database.db_config;
@@ -26,6 +24,9 @@ import javax.sql.DataSource;
 import java.io.DataInput;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -132,6 +133,12 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
             ctx.channel().writeAndFlush(frame);
         }
+        else if(dto instanceof ChatReq req){
+            ChatRes res = processChatReq(req);
+            String jsonRes = mapper.writeValueAsString(res);
+            TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+            ctx.channel().writeAndFlush(frame);
+        }
 
 
         // Notify that chat has been updated?
@@ -148,32 +155,38 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         }
     }
 
+    private ChatRes processChatReq(ChatReq req){
+        DataSource ds = connection_manager.getDataSource();
+        ChatDao dao = new ChatDao(ds);
+        List<ChatDTO> chats = new ArrayList<>();
+
+        try{
+            chats = dao.findUserChats(req.getUserID());
+        } catch (SQLException e){
+            return new ChatRes("Database error" +  e.getMessage(),
+                    0L, null);
+        }
+        return new ChatRes("success", (long) chats.size(), chats);
+
+    }
+
     private LoginRes processLoginReq(LoginReq req) {
 
         DataSource ds = connection_manager.getDataSource();
         UserDao userDao = new UserDao(ds);
-        LoginRes res = new LoginRes();
 
-        try (Connection conn = ds.getConnection();) {
+        try {
             if (!userDao.existsByUsername(req.getUsername())) {
-                res.setMessage("Username does not exist");
-//                res.setUserID((long) -1);
-                res.setUserID(null);
-                return res;
+                return new LoginRes("Username does not exist", null);
             }
             Long userID = userDao.login(req.getUsername(), req.getPassword());
             if(userID == null || userID == -1) {
-                res.setMessage("Wrong password!");
-//                res.setUserID((long) -1);
-                res.setUserID(null);
-                return res;
+                return new LoginRes("Wrong password!", null);
             }
-            res.setMessage("success");
-            res.setUserID(userID);
-            return res;
+            return new LoginRes("success", userID);
 
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            return new LoginRes("Database failure: " + e.getMessage(), null);
         }
     }
 
