@@ -10,10 +10,21 @@ public class MessageDTO extends BaseDTO {
     private Instant sentAt;
     private String messageType;
 
-    public MessageDTO() {}
+    public MessageDTO() {
+        messId = 0L;
+    }
 
     public MessageDTO(Long messId, Long senderId, Long chatId, String content, Instant sentAt, String messageType) {
         this.messId = messId;
+        this.senderId = senderId;
+        this.chatId = chatId;
+        this.content = content;
+        this.sentAt = sentAt;
+        this.messageType = messageType;
+    }
+
+    public MessageDTO(Long senderId, Long chatId, String content, Instant sentAt, String messageType) {
+        this.messId = 0L;
         this.senderId = senderId;
         this.chatId = chatId;
         this.content = content;

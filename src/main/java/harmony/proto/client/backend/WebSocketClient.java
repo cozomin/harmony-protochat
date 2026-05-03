@@ -3,6 +3,13 @@ package harmony.proto.client.backend;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import harmony.proto.dto.*;
+import harmony.proto.dto.req.ChatReq;
+import harmony.proto.dto.req.LoginReq;
+import harmony.proto.dto.req.MessageReq;
+import harmony.proto.dto.req.SignUpReq;
+import harmony.proto.dto.res.ChatRes;
+import harmony.proto.dto.res.LoginRes;
+import harmony.proto.dto.res.MessageRes;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -124,6 +131,22 @@ public final class WebSocketClient {
         else return false;
     }
 
+    public boolean signUp(String username, String password) throws Exception{
+        connect();
+        handler.prepareForLogin();
+
+        SignUpReq signUpReq = new SignUpReq(username, password);
+        String json = mapper.writeValueAsString(signUpReq);
+        channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
+
+        LoginRes loginRes = handler.awaitLoginResponse();
+        if (loginRes.isSuccess()){
+            this.username = username;
+            return true;
+        }
+        else return false;
+    }
+
     public boolean fetchChats() throws Exception {
         handler.prepareForChats();
         Long userID = handler.getCurrentUserId();
@@ -156,11 +179,12 @@ public final class WebSocketClient {
 
     }
 
-    public void sendMessage(String input) throws Exception {
+    public void sendMessage(String input, Long chatID) throws Exception {
         MessageDTO messageDTO = new MessageDTO();
         messageDTO.setContent(input);
         messageDTO.setSenderId(handler.getCurrentUserId());
-        messageDTO.setChatId(1L);   // test chatID
+//        messageDTO.setChatId(1L);   // test chatID
+        messageDTO.setChatId(chatID);
         messageDTO.setSentAt(Instant.now());
         messageDTO.setMessageType("regular");
 

@@ -43,6 +43,22 @@ public class ChatDao {
         return ids;
     }
 
+    private String findUsersInChat(long chatID) throws SQLException{
+        String sql = "select username \n" +
+                "from chat_member join hm_user on (userID = memberID) \n" +
+                "where chatID = ?";
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, chatID);
+            try (ResultSet rs = ps.executeQuery()) {
+                rs.next();
+                return rs.getString("username");
+            }
+        }
+    }
+
+
+
     public List<ChatDTO> findUserChats(long userID) throws SQLException{
         //selects all chats that userID is a member of
         String sql = "select chatID, chatName, isGroup, updated_at\n" +

@@ -52,4 +52,19 @@ public class UserDao {
             }
         }
     }
+
+    public Long signUp(String username, String pass) throws SQLException{
+        String sql = "insert into hm_user values(default, ?, ?) returning userID";
+        try(Connection con = dataSource.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql);){
+            ps.setString(1, username);
+            ps.setString(2, pass);
+            try(ResultSet rs = ps.executeQuery()){
+                if(rs.next())
+                    return rs.getLong("userID");
+                else
+                    return (long) -1;
+            }
+        }
+    }
 }

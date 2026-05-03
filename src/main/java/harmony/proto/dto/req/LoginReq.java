@@ -1,6 +1,8 @@
-package harmony.proto.dto;
+package harmony.proto.dto.req;
 
-public class LoginReq extends BaseDTO{
+import harmony.proto.dto.BaseDTO;
+
+public class LoginReq extends BaseDTO {
     private String username;
     private String password;
 

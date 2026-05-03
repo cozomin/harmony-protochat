@@ -1,6 +1,8 @@
-package harmony.proto.dto;
+package harmony.proto.dto.req;
 
-public class ChatReq extends BaseDTO{
+import harmony.proto.dto.BaseDTO;
+
+public class ChatReq extends BaseDTO {
     private Long userID;
 
     public ChatReq() {}

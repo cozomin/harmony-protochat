@@ -5,7 +5,13 @@ import harmony.proto.dao.UserDao;
 import harmony.proto.dto.*;
 import harmony.proto.dao.MessageDao;
 import harmony.proto.database.connection_manager;
-import harmony.proto.database.db_config;
+import harmony.proto.dto.req.ChatReq;
+import harmony.proto.dto.req.LoginReq;
+import harmony.proto.dto.req.MessageReq;
+import harmony.proto.dto.req.SignUpReq;
+import harmony.proto.dto.res.ChatRes;
+import harmony.proto.dto.res.LoginRes;
+import harmony.proto.dto.res.MessageRes;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -17,15 +23,11 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
 import javax.sql.DataSource;
-import java.io.DataInput;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -142,6 +144,12 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
             ctx.channel().writeAndFlush(frame);
         }
+        else if(dto instanceof SignUpReq req){
+            LoginRes res = processSignUpReq(req);
+            String jsonRes = mapper.writeValueAsString(res);
+            TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+            ctx.channel().writeAndFlush(frame);
+        }
         else if (dto instanceof LoginReq login) {
             LoginRes res = processLoginReq(login);
             String jsonRes = mapper.writeValueAsString(res);
@@ -198,6 +206,22 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             if(userID == null || userID == -1) {
                 return new LoginRes("Wrong password!", null);
             }
+            return new LoginRes("success", userID);
+
+        } catch (SQLException e) {
+            return new LoginRes("Database failure: " + e.getMessage(), null);
+        }
+    }
+
+    private LoginRes processSignUpReq(LoginReq req) {
+        DataSource ds = connection_manager.getDataSource();
+        UserDao userDao = new UserDao(ds);
+
+        try {
+            if (userDao.existsByUsername(req.getUsername())) {
+                return new LoginRes("Username already exists!", null);
+            }
+            Long userID = userDao.signUp(req.getUsername(), req.getPassword());
             return new LoginRes("success", userID);
 
         } catch (SQLException e) {

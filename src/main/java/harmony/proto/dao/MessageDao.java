@@ -15,7 +15,7 @@ public class MessageDao {
         this.dataSource = dataSource;
     }
 
-    public MessageDTO save(MessageDTO messageDTO) throws SQLException {
+    public void save(MessageDTO messageDTO) throws SQLException {
         String insertMessage = """
                 insert into hm_message(senderID, chatID, message_content, sent_at, message_type)
                 values (?, ?, ?, ?, ?::mess_enum)
@@ -48,7 +48,6 @@ public class MessageDao {
             }
 
             con.commit();
-            return messageDTO;
         }
     }
 

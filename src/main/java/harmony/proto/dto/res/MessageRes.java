@@ -1,11 +1,12 @@
-package harmony.proto.dto;
+package harmony.proto.dto.res;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import harmony.proto.dto.BaseDTO;
+import harmony.proto.dto.MessageDTO;
 
 import java.util.List;
 
-public class MessageRes extends BaseDTO{
-    private String message;
+public class MessageRes extends BaseRes {
     private Long number; //if needed in the future for fragmentation
     private List<MessageDTO> chats;
 
@@ -19,14 +20,6 @@ public class MessageRes extends BaseDTO{
         this.message = message;
         this.number = number;
         this.chats = chats;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
     }
 
     public Long getNumber() {
@@ -43,10 +36,5 @@ public class MessageRes extends BaseDTO{
 
     public void setChatMessages(List<MessageDTO> chats) {
         this.chats = chats;
-    }
-
-    @JsonIgnore
-    public boolean isSuccess(){
-        return message.equals("success");
     }
 }
