@@ -34,8 +34,8 @@ import java.util.List;
 
 public final class WebSocketClient {
 
-//    static final String URL = System.getProperty("url", "wss://harmony-chat.space/chat");
-    static final String URL = System.getProperty("url", "ws://127.0.0.1:7575/chat");
+    static final String URL = System.getProperty("url", "wss://harmony-chat.space/chat");
+//    static final String URL = System.getProperty("url", "ws://127.0.0.1:7575/chat");
     static final int MAX_CONTENT_LENGTH = 8192;
 
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());

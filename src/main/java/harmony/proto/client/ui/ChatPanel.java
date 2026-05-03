@@ -11,7 +11,15 @@ import java.util.List;
 
 public class ChatPanel extends JPanel {
 
-    private final JTextField userIdField = new JTextField("", 10);
+    private final JTextField txtMessage = new JTextField();
+//    private final JTextField userIdField = new JTextField("", 10);
+    private final JButton bSend = new JButton("Send")
+    {
+        @Override
+        public boolean isDefaultButton() {
+            return true;
+        }
+    };
     private final JButton loadButton = new JButton("Refresh");
     private final JButton logoutButton = new JButton("Logout");
 
@@ -33,9 +41,9 @@ public class ChatPanel extends JPanel {
         setBorder(new EmptyBorder(12, 12, 12, 12));
 
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topBar.add(new JLabel("User ID:"));
-        userIdField.setEditable(false);
-        topBar.add(userIdField);
+//        topBar.add(new JLabel("User ID:"));
+//        userIdField.setEditable(false);
+//        topBar.add(userIdField);
         topBar.add(loadButton);
         topBar.add(logoutButton);
 
@@ -61,6 +69,8 @@ public class ChatPanel extends JPanel {
         sideBar.add(new JScrollPane(dmsList));
 
         JPanel content = new JPanel(new BorderLayout(8, 8));
+        JPanel bottomBar = new JPanel(new BorderLayout(2, 2));
+
         headerLabel.setFont(headerLabel.getFont().deriveFont(Font.BOLD, 18f));
 
         messagesArea.setEditable(false);
@@ -69,13 +79,22 @@ public class ChatPanel extends JPanel {
         messagesArea.setWrapStyleWord(true);
         messagesArea.setText("Chat backend connected.\n\nMessage loading is not wired yet.");
 
+        bottomBar.add(txtMessage,  BorderLayout.CENTER);
+        bottomBar.add(bSend,  BorderLayout.EAST);
+
         content.add(headerLabel, BorderLayout.NORTH);
         content.add(new JScrollPane(messagesArea), BorderLayout.CENTER);
+        content.add(bottomBar, BorderLayout.SOUTH);
 
         add(topBar, BorderLayout.NORTH);
         add(sideBar, BorderLayout.WEST);
         add(content, BorderLayout.CENTER);
     }
+
+    public String getTxtMessage() {
+        return txtMessage.getText().trim();
+    }
+    public void setMessage(String message) {}
 
     public JList<ChatDTO> getDmsList() {
         return dmsList;
@@ -93,6 +112,11 @@ public class ChatPanel extends JPanel {
         return dmsListModel;
     }
 
+    public void setSendMessageAction(ActionListener actionListener) {
+        txtMessage.addActionListener(actionListener);
+        bSend.addActionListener(actionListener);
+    }
+
     public void setLogoutAction(ActionListener actionListener) {
         logoutButton.addActionListener(actionListener);
     }
@@ -107,6 +131,10 @@ public class ChatPanel extends JPanel {
 
     public void setLoadAction(ActionListener actionListener) {
         loadButton.addActionListener(actionListener);
+    }
+
+    public void setSendEnabled(boolean enabled) {
+        SwingUtilities.invokeLater(() -> bSend.setEnabled(enabled));
     }
 
     public void showSession(String username, List<ChatDTO> chats, boolean connected) {
@@ -134,6 +162,10 @@ public class ChatPanel extends JPanel {
 
     public void prepareLoadMessages() {
         messagesArea.setText("");
+    }
+
+    public void clearTxtMessages() {
+        SwingUtilities.invokeLater(() -> {txtMessage.setText("");});
     }
 }
 
