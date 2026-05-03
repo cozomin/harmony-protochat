@@ -38,10 +38,13 @@ import java.util.concurrent.Executors;
 //public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
 public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
     // ChannelGroup holds all active connections so we can broadcast messages
-    private static final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE); // just for 1 group chat
+//    private static final ChannelGroup channels = new DefaultChannelGroup(GlobalEventExecutor.INSTANCE); // just for 1 group chat
     // 1 Channel = 1 Connection to a Client => ChannelGroup = multiple connections to different clients
-    private static Map<Integer, ChannelGroup> channelGroupMap = new ConcurrentHashMap<>(); // a collection of group chats
+//    private static Map<Integer, ChannelGroup> channelGroupMap = new ConcurrentHashMap<>(); // a collection of group chats
     //to be used for multiple groups or something idk
+
+    private static final Map<Long, Channel> onlineUsers = new ConcurrentHashMap<>();
+
 
     private static final ExecutorService dbExecutor = Executors.newFixedThreadPool(20);
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -53,7 +56,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         Channel incoming = ctx.channel();
 //        // Broadcast to everyone else that someone joined
 //        channels.writeAndFlush(new TextWebSocketFrame("[SERVER] - " + incoming.remoteAddress() + " has joined!\n"));
-        channels.add(incoming);
+//        channels.add(incoming);
 //
 //        Message systemMsg = new Message();
 //        systemMsg.setContent("[SERVER] - " + incoming.remoteAddress() + " joined");
@@ -71,11 +74,13 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         Channel incoming = ctx.channel();
         // Broadcast that someone left
 //        channels.writeAndFlush(new TextWebSocketFrame("[SERVER] - " + incoming.remoteAddress() + " has left!\n"));
-        channels.remove(incoming);
+//        channels.remove(incoming);
 //        Message systemMsg = new Message();
 //        systemMsg.setContent("[SERVER] - " + incoming.remoteAddress() + " has left");
 //        systemMsg.setMessageType("SYSTEM");
-//
+
+        onlineUsers.values().remove(ctx.channel());
+
 //        try {
 //            channels.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(systemMsg)));
 //        } catch (Exception e) { e.printStackTrace(); }
@@ -109,30 +114,23 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                 saveToDatabase(messageDTO);
             }, dbExecutor);
 
-            //Pass it to the db Handler to save the message in the database
-//            ctx.fireChannelRead(messageDTO);
 
-            //.thenRun(() -> {
-//                // After storing in database, we send a confirmation on the I/O thread
-//                Message confirm = new Message();
-//                confirm.setContent("Mesaj salvat!");
-//                confirm.setMessageType("sistem");
-//                confirm.setSentAt(Instant.now());
-//
-//                try {
-//                    String json = mapper.writeValueAsString(confirm);
-//                    ctx.channel().writeAndFlush(new TextWebSocketFrame(json));
-//                } catch (Exception e) {
-//                    e.printStackTrace();
-//                }
-//            }).exceptionally(ex -> {
-//                ex.printStackTrace();
-//                return null;
-//            });
+            DataSource ds = connection_manager.getDataSource();
+            ChatDao chatDao = new ChatDao(ds);
 
             try {
+                List<Long> participants = chatDao.findMemberIdsByChatId(messageDTO.getChatId());
+
                 String jsonm = mapper.writeValueAsString(messageDTO);
-                channels.writeAndFlush(new TextWebSocketFrame(json));
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonm);
+
+                for (Long userID : participants) {
+                    Channel userChannel = onlineUsers.get(userID);
+                    if(userChannel != null && userChannel.isActive()) {
+                        userChannel.writeAndFlush(frame.retainedDuplicate());
+                    }
+                }
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -151,7 +149,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             ctx.channel().writeAndFlush(frame);
         }
         else if (dto instanceof LoginReq login) {
-            LoginRes res = processLoginReq(login);
+            LoginRes res = processLoginReq(login, ctx);
             String jsonRes = mapper.writeValueAsString(res);
             TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
             ctx.channel().writeAndFlush(frame);
@@ -193,7 +191,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
     }
 
-    private LoginRes processLoginReq(LoginReq req) {
+    private LoginRes processLoginReq(LoginReq req, ChannelHandlerContext ctx) {
 
         DataSource ds = connection_manager.getDataSource();
         UserDao userDao = new UserDao(ds);
@@ -206,6 +204,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             if(userID == null || userID == -1) {
                 return new LoginRes("Wrong password!", null);
             }
+            onlineUsers.put(userID, ctx.channel());
             return new LoginRes("success", userID);
 
         } catch (SQLException e) {
