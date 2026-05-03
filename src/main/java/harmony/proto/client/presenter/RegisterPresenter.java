@@ -3,16 +3,17 @@ package harmony.proto.client.presenter;
 import harmony.proto.client.PaneSelector;
 import harmony.proto.client.backend.WebSocketClient;
 import harmony.proto.client.ui.LoginPanel;
+import harmony.proto.client.ui.RegisterPanel;
 
 import javax.swing.*;
 
-public class LoginPresenter {
-    private final LoginPanel view;
+public class RegisterPresenter {
+    private final RegisterPanel registerView;
     private final WebSocketClient client;
     private final ClientPresenter coordinator;
 
-    public LoginPresenter(LoginPanel view, WebSocketClient client, ClientPresenter coordinator) {
-        this.view = view;
+    public RegisterPresenter(RegisterPanel registerView, WebSocketClient client, ClientPresenter coordinator) {
+        this.registerView = registerView;
         this.client = client;
         this.coordinator = coordinator;
         bind();
@@ -20,23 +21,22 @@ public class LoginPresenter {
 
     //binding associates a function to an ui element
     private void bind() {
-        view.setLoginAction(e -> login());
-        view.setRegisterAction(e -> coordinator.navigateTo(PaneSelector.REGISTER));
+        registerView.setRegisterAndLoginAction(e -> registerAndLogin());
+        registerView.setBackToLogin(e -> coordinator.navigateTo(PaneSelector.LOGIN));
     }
+    private void registerAndLogin() {
+        registerView.clearError();
 
-    private void login() {
-        view.clearError();
-
-        String username = view.getTxtUsername();
-        String password = view.getTxtPassword();
+        String username = registerView.getTxtUsername();
+        String password = registerView.getTxtPassword();
 
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
-            view.showError("Please fill all the fields");
+            registerView.showError("Please fill all the fields");
             return;
         }
 
-        view.setLoginEnabled(false);
-        view.showError("Signing in...");
+        registerView.setLoginEnabled(false);
+        registerView.showError("Signing in...");
 
         //SwingWorker is designed to handle long-running tasks in a background thread, preventing the GUI from freezing
         new SwingWorker<Boolean, Void>() {
@@ -45,7 +45,7 @@ public class LoginPresenter {
             @Override
             protected Boolean doInBackground() {
                 try {
-                    return client.login(username, password);
+                    return client.signUp(username, password);
                 } catch (Exception e) {
                     errorMessage = e.getMessage();
                     return false;
@@ -54,7 +54,7 @@ public class LoginPresenter {
 
             @Override
             protected void done() {
-                view.setLoginEnabled(true);
+                registerView.setLoginEnabled(true);
 
                 boolean success = false;
                 try {
@@ -64,7 +64,7 @@ public class LoginPresenter {
                 }
 
                 if (success) {
-                    view.clearError();
+                    registerView.clearError();
                     try {
                         coordinator.onLoginSuccess();
                     } catch (Exception e) {
@@ -72,7 +72,7 @@ public class LoginPresenter {
                     }
                 } else {
                     String backendMessage = client.getLoginFailureReason();
-                    view.showError(
+                    registerView.showError(
                             errorMessage != null && !errorMessage.isBlank()
                                     ? errorMessage
                                     : (backendMessage != null && !backendMessage.isBlank()

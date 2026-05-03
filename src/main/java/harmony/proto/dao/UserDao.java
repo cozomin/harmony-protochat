@@ -46,16 +46,18 @@ public class UserDao {
     }
 
     public String signUp(String username, String pass) throws SQLException{
-        String sql = "insert into hm_user values(default, ?, ?)";
+        String sql = "insert into hm_user values(?, ?)";
         try(Connection con = dataSource.getConnection();
             PreparedStatement ps = con.prepareStatement(sql);){
             ps.setString(1, username);
             ps.setString(2, pass);
-            try(ResultSet rs = ps.executeQuery()){
-                if(rs.next())
-                    return username;
-                else
-                    return null;
+
+            int rowsAffected = ps.executeUpdate();
+
+            if (rowsAffected > 0){
+                return username;
+            } else {
+                return null;
             }
         }
     }

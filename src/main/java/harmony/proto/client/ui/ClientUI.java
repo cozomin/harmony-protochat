@@ -18,6 +18,7 @@ public class ClientUI extends JFrame {
 
     //Each section of the app uses a different screen => each screen is a different panel
     private final LoginPanel loginPanel = new LoginPanel();
+    private final RegisterPanel registerPanel = new RegisterPanel();
     private final ChatPanel chatPanel = new ChatPanel();
 
     //They are glued together by the cardLayout and JPanel cards
@@ -35,6 +36,7 @@ public class ClientUI extends JFrame {
 
         //each panel needs to have a name for identification
         cards.add(loginPanel, PaneSelector.LOGIN.name());
+        cards.add(registerPanel, PaneSelector.REGISTER.name());
         cards.add(chatPanel, PaneSelector.CHAT.name());
 
         setContentPane(cards);
@@ -47,6 +49,10 @@ public class ClientUI extends JFrame {
 
     public LoginPanel getLoginView() {
         return loginPanel;
+    }
+
+    public  RegisterPanel getRegisterView() {
+        return registerPanel;
     }
 
     public ChatPanel getChatView() {

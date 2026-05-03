@@ -8,15 +8,15 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
-public class LoginPanel extends JPanel {
+public class RegisterPanel extends JPanel {
 
     private final JTextField txtUsername = new JTextField();
     private final JPasswordField txtPassword = new JPasswordField();
     private JButton bLogin;
     private final JLabel errorLabel = new JLabel();
-    JButton bCreateAccount = createNoBorderButton("Create an account");
+    JButton bBackToLogin = createNoBorderButton("Back to Login");
 
-    public LoginPanel() {
+    public RegisterPanel() {
         init();
     }
 
@@ -29,7 +29,7 @@ public class LoginPanel extends JPanel {
         lbTitle.putClientProperty(FlatClientProperties.STYLE, "font:bold +15;");
         add(lbTitle, "gapy 8 8");
 
-        add(new JLabel("Sign in to resonate with others", JLabel.CENTER));
+        add(new JLabel("Create an account to resonate with others", JLabel.CENTER));
 
         JLabel lbUsername = new JLabel("Username");
         lbUsername.putClientProperty(FlatClientProperties.STYLE, "font:bold;");
@@ -45,10 +45,10 @@ public class LoginPanel extends JPanel {
 
         JLabel lbPassword = new JLabel("Password");
         lbPassword.putClientProperty(FlatClientProperties.STYLE, "font:bold;");
-        add(lbPassword, "gapy 10 5,split 2");
+        add(lbPassword, "gapy 10 5");
 
-        JButton cmdForgotPassword = createNoBorderButton("Forgot Password ?");
-        add(cmdForgotPassword, "grow 0,gapy 10 5");
+//        JButton cmdForgotPassword = createNoBorderButton("Forgot Password ?");
+//        add(cmdForgotPassword, "grow 0,gapy 10 5");
 
         txtPassword.putClientProperty(FlatClientProperties.STYLE, "iconTextGap:10;showRevealButton:true;");
         txtPassword.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter your password");
@@ -58,9 +58,9 @@ public class LoginPanel extends JPanel {
         );
         add(txtPassword);
 
-        add(new JCheckBox("Remember"), "gapy 10 10");
+//        add(new JCheckBox("Remember"), "gapy 10 10");
 
-        bLogin = new JButton("Sign in", new FlatSVGIcon("login/icon/next.svg")) {
+        bLogin = new JButton("Register", new FlatSVGIcon("login/icon/next.svg")) {
             @Override
             public boolean isDefaultButton() {
                 return true;
@@ -73,11 +73,11 @@ public class LoginPanel extends JPanel {
         errorLabel.setForeground(new Color(220, 80, 80));
         add(errorLabel, "gapy n 5");
 
-        JLabel lbNoAccount = new JLabel("No account ?");
+        JLabel lbNoAccount = new JLabel("Already have an account ?");
         lbNoAccount.putClientProperty(FlatClientProperties.STYLE, "foreground:$Label.disabledForeground;");
         add(lbNoAccount, "split 2,gapx push n");
 
-        add(bCreateAccount, "gapx n push");
+        add(bBackToLogin, "gapx n push");
     }
 
     private JButton createNoBorderButton(String text) {
@@ -100,13 +100,13 @@ public class LoginPanel extends JPanel {
         return String.valueOf(txtPassword.getPassword());
     }
 
-    public void setRegisterAction(ActionListener actionListener) {
-        bCreateAccount.addActionListener(actionListener);
-    }
-
-    public void setLoginAction(ActionListener actionListener) {
+    public void setRegisterAndLoginAction(ActionListener actionListener) {
         bLogin.addActionListener(actionListener);
         txtPassword.addActionListener(actionListener);
+    }
+
+    public void setBackToLogin(ActionListener actionListener) {
+        bBackToLogin.addActionListener(actionListener);
     }
 
     public void setLoginEnabled(boolean enabled) {

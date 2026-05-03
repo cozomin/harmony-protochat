@@ -14,6 +14,7 @@ public class ClientPresenter {
 
     private final LoginPresenter loginPresenter;
     private final ChatPresenter chatPresenter;
+    private final RegisterPresenter registerPresenter;
 
     public ClientPresenter(WebSocketClient client, ClientUI view) {
         this.client = client;
@@ -21,6 +22,7 @@ public class ClientPresenter {
 
         this.loginPresenter = new LoginPresenter(mainView.getLoginView(), client, this);
         this.chatPresenter = new ChatPresenter(mainView.getChatView(), client, this);
+        this.registerPresenter = new RegisterPresenter(mainView.getRegisterView(), client , this);
 
         mainView.showPane(PaneSelector.LOGIN);
     }
@@ -29,7 +31,6 @@ public class ClientPresenter {
         chatPresenter.loadSessionInfoIntoChat();
         mainView.showPane(PaneSelector.CHAT);
         chatPresenter.loadChats();
-
     }
 
     public void onLogout() {

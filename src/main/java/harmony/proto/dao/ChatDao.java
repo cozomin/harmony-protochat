@@ -94,16 +94,19 @@ public class ChatDao {
     }
 
     private String findDmName(String username, long chatID) throws SQLException{
-        String sql = "select username \n" +
-                "from chat_member join hm_user on (username = memberID) \n" +
-                "where chatID = ? and username != ?";
+        String sql = """
+                select hm_user.username\s
+                from chat_member join hm_user on (hm_user.username = chat_member.memberID)\s
+                where chat_member.chatID = ? and hm_user.username != ?""";
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setLong(1, chatID);
             ps.setString(2, username);
             try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                return rs.getString("username");
+                if(rs.next())
+                    return rs.getString("username");
+                else
+                    return "Unknown user";
             }
         }
     }
