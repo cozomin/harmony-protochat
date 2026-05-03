@@ -78,11 +78,9 @@ public class ChatPresenter {
     }
 
     public void loadSessionInfoIntoChat() {
-        Long userID = client.getCurrentUserId();
         String username = client.getCurrentUsername();
         List<ChatDTO> chats = client.getChats();
         ChatView.showSession(
-                userID != null ? userID : -1L,
                 username != null ? username : "Unknown user",
                 chats,
                 client.isConnected()

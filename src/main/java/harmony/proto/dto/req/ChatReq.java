@@ -3,19 +3,19 @@ package harmony.proto.dto.req;
 import harmony.proto.dto.BaseDTO;
 
 public class ChatReq extends BaseDTO {
-    private Long userID;
+    private String username;
 
     public ChatReq() {}
 
-    public ChatReq(Long userID) {
-        this.userID = userID;
+    public ChatReq(String username) {
+        this.username = username;
     }
 
-    public Long getUserID() {
-        return userID;
+    public String getUsername() {
+        return username;
     }
 
-    public void setUserID(Long userID) {
-        this.userID = userID;
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

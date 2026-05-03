@@ -149,8 +149,8 @@ public final class WebSocketClient {
 
     public boolean fetchChats() throws Exception {
         handler.prepareForChats();
-        Long userID = handler.getCurrentUserId();
-        ChatReq chatReq = new ChatReq(userID);
+        String username = handler.getCurrentUsername();
+        ChatReq chatReq = new ChatReq(username);
         String json = mapper.writeValueAsString(chatReq);
         channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
 
@@ -164,8 +164,8 @@ public final class WebSocketClient {
 
     public List<MessageDTO> fetchMessages(Long chatID) throws Exception {
         handler.prepareForMessages();
-        Long userID = handler.getCurrentUserId();
-        MessageReq req = new MessageReq(userID, chatID);
+        String username = handler.getCurrentUsername();
+        MessageReq req = new MessageReq(chatID);
 
         String json = mapper.writeValueAsString(req);
         channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
@@ -182,7 +182,7 @@ public final class WebSocketClient {
     public void sendMessage(String input, Long chatID) throws Exception {
         MessageDTO messageDTO = new MessageDTO();
         messageDTO.setContent(input);
-        messageDTO.setSenderId(handler.getCurrentUserId());
+        messageDTO.setSenderId(handler.getCurrentUsername());
 //        messageDTO.setChatId(1L);   // test chatID
         messageDTO.setChatId(chatID);
         messageDTO.setSentAt(Instant.now());
@@ -215,9 +215,9 @@ public final class WebSocketClient {
         return channel != null && channel.isActive();
     }
 
-    public Long getCurrentUserId() {
-        return handler != null ? handler.getCurrentUserId() : null;
-    }
+//    public String getCurrentUsername() {
+//        return handler != null ? handler.getCurrentUsername() : null;
+//    }
 
     public String getCurrentUsername() {
         return handler != null ? username : null;

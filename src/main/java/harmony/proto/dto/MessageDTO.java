@@ -4,7 +4,7 @@ import java.time.Instant;
 
 public class MessageDTO extends BaseDTO {
     private Long messId;
-    private Long senderId;
+    private String senderId;
     private Long chatId;
     private String content;
     private Instant sentAt;
@@ -14,7 +14,7 @@ public class MessageDTO extends BaseDTO {
         messId = 0L;
     }
 
-    public MessageDTO(Long messId, Long senderId, Long chatId, String content, Instant sentAt, String messageType) {
+    public MessageDTO(Long messId, String senderId, Long chatId, String content, Instant sentAt, String messageType) {
         this.messId = messId;
         this.senderId = senderId;
         this.chatId = chatId;
@@ -23,7 +23,7 @@ public class MessageDTO extends BaseDTO {
         this.messageType = messageType;
     }
 
-    public MessageDTO(Long senderId, Long chatId, String content, Instant sentAt, String messageType) {
+    public MessageDTO(String senderId, Long chatId, String content, Instant sentAt, String messageType) {
         this.messId = 0L;
         this.senderId = senderId;
         this.chatId = chatId;
@@ -35,8 +35,8 @@ public class MessageDTO extends BaseDTO {
     public Long getMessId() { return messId; }
     public void setMessId(Long messId) { this.messId = messId; }
 
-    public Long getSenderId() { return senderId; }
-    public void setSenderId(Long senderId) { this.senderId = senderId; }
+    public String getSenderId() { return senderId; }
+    public void setSenderId(String senderId) { this.senderId = senderId; }
 
     public Long getChatId() { return chatId; }
     public void setChatId(Long chatId) { this.chatId = chatId; }

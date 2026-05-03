@@ -15,12 +15,9 @@ import harmony.proto.dto.res.MessageRes;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.group.ChannelGroup;
-import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.websocketx.PingWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
@@ -43,7 +40,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 //    private static Map<Integer, ChannelGroup> channelGroupMap = new ConcurrentHashMap<>(); // a collection of group chats
     //to be used for multiple groups or something idk
 
-    private static final Map<Long, Channel> onlineUsers = new ConcurrentHashMap<>();
+    private static final Map<String, Channel> onlineUsers = new ConcurrentHashMap<String, Channel>();
 
 
     private static final ExecutorService dbExecutor = Executors.newFixedThreadPool(20);
@@ -119,13 +116,13 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             ChatDao chatDao = new ChatDao(ds);
 
             try {
-                List<Long> participants = chatDao.findMemberIdsByChatId(messageDTO.getChatId());
+                List<String> participants = chatDao.findUsersInChat(messageDTO.getChatId());
 
                 String jsonm = mapper.writeValueAsString(messageDTO);
                 TextWebSocketFrame frame = new TextWebSocketFrame(jsonm);
 
-                for (Long userID : participants) {
-                    Channel userChannel = onlineUsers.get(userID);
+                for (String username : participants) {
+                    Channel userChannel = onlineUsers.get(username);
                     if(userChannel != null && userChannel.isActive()) {
                         userChannel.writeAndFlush(frame.retainedDuplicate());
                     }
@@ -182,7 +179,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         List<ChatDTO> chats = new ArrayList<>();
 
         try{
-            chats = dao.findUserChats(req.getUserID());
+            chats = dao.findUserChats(req.getUsername());
         } catch (SQLException e){
             return new ChatRes("Database error" +  e.getMessage(),
                     0L, null);
@@ -200,12 +197,12 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             if (!userDao.existsByUsername(req.getUsername())) {
                 return new LoginRes("Username does not exist", null);
             }
-            Long userID = userDao.login(req.getUsername(), req.getPassword());
-            if(userID == null || userID == -1) {
+            String username = userDao.login(req.getUsername(), req.getPassword());
+            if(username == null) {
                 return new LoginRes("Wrong password!", null);
             }
-            onlineUsers.put(userID, ctx.channel());
-            return new LoginRes("success", userID);
+            onlineUsers.put(username, ctx.channel());
+            return new LoginRes("success", username);
 
         } catch (SQLException e) {
             return new LoginRes("Database failure: " + e.getMessage(), null);
@@ -220,8 +217,8 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             if (userDao.existsByUsername(req.getUsername())) {
                 return new LoginRes("Username already exists!", null);
             }
-            Long userID = userDao.signUp(req.getUsername(), req.getPassword());
-            return new LoginRes("success", userID);
+            String username = userDao.signUp(req.getUsername(), req.getPassword());
+            return new LoginRes("success", username);
 
         } catch (SQLException e) {
             return new LoginRes("Database failure: " + e.getMessage(), null);

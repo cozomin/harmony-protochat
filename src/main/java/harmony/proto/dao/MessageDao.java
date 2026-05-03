@@ -28,7 +28,7 @@ public class MessageDao {
             con.setAutoCommit(false);
             //set message parameters
             try (PreparedStatement ps = con.prepareStatement(insertMessage)) {
-                ps.setLong(1, messageDTO.getSenderId());
+                ps.setString(1, messageDTO.getSenderId());
                 ps.setLong(2, messageDTO.getChatId());
                 ps.setString(3, messageDTO.getContent());
                 ps.setTimestamp(4, Timestamp.from(messageDTO.getSentAt()));
@@ -71,7 +71,7 @@ public class MessageDao {
                 while (rs.next()) {
                     MessageDTO m = new MessageDTO();
                     m.setMessId(rs.getLong("messID"));
-                    m.setSenderId(rs.getLong("senderID"));
+                    m.setSenderId(rs.getString("senderID"));
                     m.setChatId(rs.getLong("chatID"));
                     m.setContent(rs.getString("message_content"));
                     Timestamp ts = rs.getTimestamp("sent_at");

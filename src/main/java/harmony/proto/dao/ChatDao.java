@@ -15,51 +15,54 @@ public class ChatDao {
         this.dataSource = dataSource;
     }
 
-    public boolean isMember(Long chatId, Long userId) throws SQLException {
+    public boolean isMember(Long chatId, String username) throws SQLException {
         String sql = "select 1 from chat_member where chatID = ? and memberID = ?";
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setLong(1, chatId);
-            ps.setLong(2, userId);
+            ps.setString(2, username);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next();
             }
         }
     }
 
-    public List<Long> findMemberIdsByChatId(Long chatId) throws SQLException {
-        String sql = "select memberID from chat_member where chatID = ?";
-        List<Long> ids = new ArrayList<>();
+//    public List<Long> findMemberIdsByChatId(Long chatId) throws SQLException {
+//        String sql = "select memberID from chat_member where chatID = ?";
+//        List<Long> ids = new ArrayList<>();
+//
+//        try (Connection con = dataSource.getConnection();
+//             PreparedStatement ps = con.prepareStatement(sql)) {
+//            ps.setLong(1, chatId);
+//            try (ResultSet rs = ps.executeQuery()) {
+//                while (rs.next()) {
+//                    ids.add(rs.getLong("memberID"));
+//                }
+//            }
+//        }
+//        return ids;
+//    }
 
-        try (Connection con = dataSource.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setLong(1, chatId);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    ids.add(rs.getLong("memberID"));
-                }
-            }
-        }
-        return ids;
-    }
-
-    private String findUsersInChat(long chatID) throws SQLException{
+    public List<String> findUsersInChat(long chatID) throws SQLException{
         String sql = "select username \n" +
-                "from chat_member join hm_user on (userID = memberID) \n" +
+                "from chat_member join hm_user on (username = memberID) \n" +
                 "where chatID = ?";
+        List<String> users = new ArrayList<>();
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setLong(1, chatID);
             try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                return rs.getString("username");
+                while(rs.next()) {
+                    users.add(rs.getString("username"));
+                }
             }
         }
+        return users;
     }
 
 
 
-    public List<ChatDTO> findUserChats(long userID) throws SQLException{
+    public List<ChatDTO> findUserChats(String username) throws SQLException{
         //selects all chats that userID is a member of
         String sql = "select chatID, chatName, isGroup, updated_at\n" +
                 "from chat join chat_member using (chatID)\n" +
@@ -68,7 +71,7 @@ public class ChatDao {
 
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setLong(1, userID);
+            ps.setString(1, username);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     ChatDTO chatDTO = new ChatDTO();
@@ -81,7 +84,7 @@ public class ChatDao {
                     }
                     else {
                         //if it's a DM, gives chat the name of the other user
-                        chatDTO.setChatName(findDmName(userID, chatDTO.getChatID()));
+                        chatDTO.setChatName(findDmName(username, chatDTO.getChatID()));
                     }
                     chatDTOS.add(chatDTO);
                 }
@@ -90,14 +93,14 @@ public class ChatDao {
         return chatDTOS;
     }
 
-    private String findDmName(long userID, long chatID) throws SQLException{
+    private String findDmName(String username, long chatID) throws SQLException{
         String sql = "select username \n" +
-                "from chat_member join hm_user on (userID = memberID) \n" +
-                "where chatID = ? and userID != ?";
+                "from chat_member join hm_user on (username = memberID) \n" +
+                "where chatID = ? and username != ?";
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setLong(1, chatID);
-            ps.setLong(2, userID);
+            ps.setString(2, username);
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
                 return rs.getString("username");
@@ -105,13 +108,13 @@ public class ChatDao {
         }
     }
 
-    public void touchLastAccess(Long chatId, Long userId) throws SQLException {
+    public void touchLastAccess(Long chatId, String username) throws SQLException {
         String sql = "update chat_member set last_access = ? where chatID = ? and memberID = ?";
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setTimestamp(1, Timestamp.from(Instant.now()));
             ps.setLong(2, chatId);
-            ps.setLong(3, userId);
+            ps.setString(3, username);
             ps.executeUpdate();
         }
     }

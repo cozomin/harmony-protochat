@@ -109,15 +109,13 @@ public class ChatPanel extends JPanel {
         loadButton.addActionListener(actionListener);
     }
 
-    public void showSession(long userId, String username, List<ChatDTO> chats, boolean connected) {
+    public void showSession(String username, List<ChatDTO> chats, boolean connected) {
 
         SwingUtilities.invokeLater(() -> {
-            userIdField.setText(String.valueOf(userId));
             headerLabel.setText("Welcome " + username);
             messagesArea.setText(
                     "Connection status: " + (connected ? "connected" : "disconnected") + "\n" +
                             "Logged in as: " + username + "\n" +
-                            "User ID: " + userId + "\n\n" +
                             "The UI is now connected to the websocket client backend."
             );
         });

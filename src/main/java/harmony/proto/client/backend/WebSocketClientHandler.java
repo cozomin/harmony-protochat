@@ -32,7 +32,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private ChannelPromise handshakeFuture;
 
     private volatile boolean authenticated = false;
-    private volatile Long currentUserId;
+    private volatile String currentUsername;
     private volatile String loginFailureReason;
     private volatile LiveMessageListener liveMessageListener;
 
@@ -52,8 +52,8 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         return authenticated;
     }
 
-    public Long getCurrentUserId() {
-        return currentUserId;
+    public String getCurrentUsername() {
+        return currentUsername;
     }
 
     public String getLoginFailureReason() {
@@ -66,7 +66,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
     public synchronized void prepareForLogin() {
         authenticated = false;
-        currentUserId = null;
+        currentUsername = null;
         loginFailureReason = null;
         loginFuture = new CompletableFuture<>();
     }
@@ -151,7 +151,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
                     if (loginRes.isSuccess()) {
                         authenticated = true;
-                        currentUserId = loginRes.getUserID();
+                        currentUsername = loginRes.getUsername();
 //                        currentUsername = loginRes.getUsername();
                         loginFailureReason = null;
                     } else {
