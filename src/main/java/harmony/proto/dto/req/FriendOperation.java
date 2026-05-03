@@ -4,7 +4,7 @@ public enum FriendOperation{
     accept,
     deny,
     send,
-    display_incoming,
-    display_outgoing,
-    display_accepted
+    fetch_incoming,
+    fetch_outgoing,
+    fetch_accepted
 }

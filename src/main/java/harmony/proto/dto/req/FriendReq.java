@@ -4,15 +4,15 @@ import harmony.proto.dto.BaseDTO;
 
 public class FriendReq extends BaseDTO {
     private FriendOperation operation;
-    private Long userID1;
-    private Long userID2;
+    private String user1;
+    private String user2;
 
     FriendReq(){}
 
-    public FriendReq(FriendOperation operation, Long userID1, Long userID2) {
+    public FriendReq(FriendOperation operation, String user1, String user2) {
         this.operation = operation;
-        this.userID1 = userID1;
-        this.userID2 = userID2;
+        this.user1 = user1;
+        this.user2 = user2;
     }
 
     public FriendOperation getOperation() {
@@ -23,19 +23,19 @@ public class FriendReq extends BaseDTO {
         this.operation = operation;
     }
 
-    public Long getUserID1() {
-        return userID1;
+    public String getUser1() {
+        return user1;
     }
 
-    public void setUserID1(Long userID1) {
-        this.userID1 = userID1;
+    public void setUser1(String user1) {
+        this.user1 = user1;
     }
 
-    public Long getUserID2() {
-        return userID2;
+    public String getUser2() {
+        return user2;
     }
 
-    public void setUserID2(Long userID2) {
-        this.userID2 = userID2;
+    public void setUser2(String user2) {
+        this.user2 = user2;
     }
 }

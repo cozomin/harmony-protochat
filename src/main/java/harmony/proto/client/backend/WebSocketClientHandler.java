@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import harmony.proto.dto.*;
 import harmony.proto.dto.res.ChatRes;
+import harmony.proto.dto.res.FriendRes;
 import harmony.proto.dto.res.LoginRes;
 import harmony.proto.dto.res.MessageRes;
 import io.netty.channel.Channel;
@@ -36,9 +37,10 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private volatile String loginFailureReason;
     private volatile LiveMessageListener liveMessageListener;
 
-    private volatile CompletableFuture<LoginRes> loginFuture = new CompletableFuture<>();
-    private volatile CompletableFuture<ChatRes> chatFuture = new CompletableFuture<>();
-    private volatile CompletableFuture<MessageRes> messageFuture = new CompletableFuture<>();
+    private volatile CompletableFuture<LoginRes> loginFuture;
+    private volatile CompletableFuture<ChatRes> chatFuture;
+    private volatile CompletableFuture<MessageRes> messageFuture;
+    private volatile CompletableFuture<FriendRes> friendOpFuture;
 
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
@@ -78,6 +80,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     public synchronized void prepareForMessages() {
         messageFuture = new CompletableFuture<>();
     }
+    public synchronized void prepareForFriendOp(){ friendOpFuture = new CompletableFuture<>(); }
 
     public LoginRes awaitLoginResponse() throws Exception {
         return loginFuture.get(5, TimeUnit.SECONDS);
@@ -89,6 +92,10 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
     public MessageRes awaitMessageResponse() throws Exception{
         return messageFuture.get(5, TimeUnit.SECONDS);
+    }
+
+    public FriendRes awaitFriendOpResponse() throws Exception{
+        return friendOpFuture.get(5, TimeUnit.SECONDS);
     }
 
     @Override
@@ -142,11 +149,12 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                         liveMessageListener.onNewMessage(messageDTO);
                     }
                 }
-
                 else if (dto instanceof MessageRes messageRes){
                     messageFuture.complete(messageRes);
                 }
-
+                else if (dto instanceof FriendRes friendRes){
+                    friendOpFuture.complete(friendRes);
+                }
                 else if (dto instanceof LoginRes loginRes) {
 
                     if (loginRes.isSuccess()) {

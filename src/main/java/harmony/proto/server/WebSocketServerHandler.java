@@ -5,13 +5,8 @@ import harmony.proto.dao.UserDao;
 import harmony.proto.dto.*;
 import harmony.proto.dao.MessageDao;
 import harmony.proto.database.connection_manager;
-import harmony.proto.dto.req.ChatReq;
-import harmony.proto.dto.req.LoginReq;
-import harmony.proto.dto.req.MessageReq;
-import harmony.proto.dto.req.SignUpReq;
-import harmony.proto.dto.res.ChatRes;
-import harmony.proto.dto.res.LoginRes;
-import harmony.proto.dto.res.MessageRes;
+import harmony.proto.dto.req.*;
+import harmony.proto.dto.res.*;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -157,6 +152,12 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
             ctx.channel().writeAndFlush(frame);
         }
+        else if(dto instanceof FriendReq req){
+            FriendRes res = processFriendReq(req);
+            String jsonRes = mapper.writeValueAsString(res);
+            TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+            ctx.channel().writeAndFlush(frame);
+        }
 
 
         // Notify that chat has been updated?
@@ -242,6 +243,42 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         } catch (SQLException e) {
             return new MessageRes("Database failure: " + e.getMessage(), null, null);
         }
+    }
+
+    private FriendRes processFriendReq(FriendReq req) {
+        DataSource ds = connection_manager.getDataSource();
+        UserDao dao = new UserDao(ds);
+        List<UserDTO> users = new ArrayList<>();
+        String user = req.getUser1();
+
+    try {
+        switch (req.getOperation()) {
+            case FriendOperation.send:
+                if (!dao.existsByUsername(req.getUser1())) {
+                    return new FriendRes("Username does not exist!", null, null);
+                }
+                dao.sendFriendReq(user, req.getUser2());
+                break;
+            case FriendOperation.accept:
+                dao.acceptFriendReq(user, req.getUser2());
+                break;
+            case FriendOperation.deny:
+                dao.denyFriendReq(user, req.getUser2());
+                break;
+            case FriendOperation.fetch_accepted:
+                users = dao.fetchFriends(user, "accepted");
+                break;
+            case FriendOperation.fetch_outgoing:
+                users = dao.fetchFriends(user, "outgoing");
+                break;
+            case FriendOperation.fetch_incoming:
+                users = dao.fetchFriends(user, "incoming");
+                break;
+        }
+    }catch (SQLException e){
+        return new FriendRes("DB error! " + e.getMessage(), null, null);
+    }
+        return new FriendRes("success", req.getOperation(), users);
     }
 
     @Override

@@ -3,11 +3,9 @@ package harmony.proto.client.backend;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import harmony.proto.dto.*;
-import harmony.proto.dto.req.ChatReq;
-import harmony.proto.dto.req.LoginReq;
-import harmony.proto.dto.req.MessageReq;
-import harmony.proto.dto.req.SignUpReq;
+import harmony.proto.dto.req.*;
 import harmony.proto.dto.res.ChatRes;
+import harmony.proto.dto.res.FriendRes;
 import harmony.proto.dto.res.LoginRes;
 import harmony.proto.dto.res.MessageRes;
 import io.netty.bootstrap.Bootstrap;
@@ -160,6 +158,20 @@ public final class WebSocketClient {
             return true;
         }
         else return false;
+    }
+
+    public FriendRes friendOperation(FriendOperation operation, String user2) throws Exception{
+        //OBS! user2 can be null, depending on the operation. User2 would be taken from a text box
+        handler.prepareForFriendOp();
+        String user1 = handler.getCurrentUsername();
+        FriendReq friendReq = new FriendReq(operation, user1, user2);
+        String json = mapper.writeValueAsString(friendReq);
+        channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
+
+        FriendRes friendRes = handler.awaitFriendOpResponse();
+
+        return friendRes;
+
     }
 
     public List<MessageDTO> fetchMessages(Long chatID) throws Exception {
