@@ -269,6 +269,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                     break;
                 case FriendOperation.accept:
                     dao.acceptFriendReq(user, req.getUser2());
+
                     break;
                 case FriendOperation.deny:
                     dao.denyFriendReq(user, req.getUser2());

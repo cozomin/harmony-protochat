@@ -62,6 +62,27 @@ public class UserDao {
         }
     }
 
+    public void addDM(String user1, String user2) throws SQLException{
+        String sql = "insert into chat values(default, default, false) returning chatID";
+        Long chatID;
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ResultSet rs = ps.executeQuery();
+            chatID = rs.getLong("chatID");
+        }
+        sql = """
+            insert into chat_member values (?, ?, 'member');
+            insert into chat_member values (?, ?, 'member');""";
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, chatID);
+            ps.setLong(3, chatID);
+            ps.setString(2, user1);
+            ps.setString(4, user2);
+            ps.executeUpdate();
+        }
+    }
+
     public void sendFriendReq(String user1, String user2) throws SQLException{
         String sql = "insert into user_friend values( ?, ?, 'outgoing')";
         try(Connection con = dataSource.getConnection();
@@ -80,6 +101,7 @@ public class UserDao {
             ps.setString(2, user2);
             ps.executeUpdate();
         }
+        addDM(user1, user2);
     }
 
     public void denyFriendReq(String user1, String user2) throws SQLException{

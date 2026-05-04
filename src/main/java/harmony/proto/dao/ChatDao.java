@@ -27,21 +27,7 @@ public class ChatDao {
         }
     }
 
-//    public List<Long> findMemberIdsByChatId(Long chatId) throws SQLException {
-//        String sql = "select memberID from chat_member where chatID = ?";
-//        List<Long> ids = new ArrayList<>();
-//
-//        try (Connection con = dataSource.getConnection();
-//             PreparedStatement ps = con.prepareStatement(sql)) {
-//            ps.setLong(1, chatId);
-//            try (ResultSet rs = ps.executeQuery()) {
-//                while (rs.next()) {
-//                    ids.add(rs.getLong("memberID"));
-//                }
-//            }
-//        }
-//        return ids;
-//    }
+//TODO: every try() block is useless btw lmao
 
     public List<String> findUsersInChat(long chatID) throws SQLException{
         String sql = "select username \n" +
@@ -108,6 +94,31 @@ public class ChatDao {
                 else
                     return "Unknown user";
             }
+        }
+    }
+
+    //TODO: add timestamp
+
+    public void addGroup(String name, String creator, List<String> users) throws SQLException{
+        String sql = "insert into chat values(default, ?, false) returning chatID";
+        long chatID;
+        Connection con = dataSource.getConnection();
+        PreparedStatement ps = con.prepareStatement(sql);
+
+        ps.setString(1, name);
+        ResultSet rs = ps.executeQuery();
+        chatID = rs.getLong("chatID");
+
+        sql = "insert into chat_member values(" + chatID + ", ?, 'creator') ";
+        ps = con.prepareStatement(sql);
+        ps.setString(1, creator);
+        ps.executeUpdate();
+
+        for(var user:users){
+            sql = "insert into chat_member values(" + chatID + ", ?, 'member') ";
+            ps = con.prepareStatement(sql);
+            ps.setString(1, user);
+            ps.executeUpdate();
         }
     }
 
