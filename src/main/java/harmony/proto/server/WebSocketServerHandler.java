@@ -36,7 +36,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
     //to be used for multiple groups or something idk
 
     private static final Map<String, Channel> onlineUsers = new ConcurrentHashMap<String, Channel>();
-
+    private static final Map<Long, List<String>> chatMembers = new ConcurrentHashMap<>();
 
     private static final ExecutorService dbExecutor = Executors.newFixedThreadPool(20);
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -106,13 +106,21 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                 saveToDatabase(messageDTO);
             }, dbExecutor);
 
+            Long chatId = messageDTO.getChatId();
 
-            DataSource ds = connection_manager.getDataSource();
-            ChatDao chatDao = new ChatDao(ds);
+            List<String> participants = chatMembers.computeIfAbsent(chatId, id -> {
+                DataSource ds = connection_manager.getDataSource();
+                ChatDao chatDao = new ChatDao(ds);
+
+                try {
+                    return chatDao.findUsersInChat(id);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    return new  ArrayList<>();
+                }
+            });
 
             try {
-                List<String> participants = chatDao.findUsersInChat(messageDTO.getChatId());
-
                 String jsonm = mapper.writeValueAsString(messageDTO);
                 TextWebSocketFrame frame = new TextWebSocketFrame(jsonm);
 
@@ -251,33 +259,33 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         List<UserDTO> users = new ArrayList<>();
         String user = req.getUser1();
 
-    try {
-        switch (req.getOperation()) {
-            case FriendOperation.send:
-                if (!dao.existsByUsername(req.getUser1())) {
-                    return new FriendRes("Username does not exist!", null, null);
-                }
-                dao.sendFriendReq(user, req.getUser2());
-                break;
-            case FriendOperation.accept:
-                dao.acceptFriendReq(user, req.getUser2());
-                break;
-            case FriendOperation.deny:
-                dao.denyFriendReq(user, req.getUser2());
-                break;
-            case FriendOperation.fetch_accepted:
-                users = dao.fetchFriends(user, "accepted");
-                break;
-            case FriendOperation.fetch_outgoing:
-                users = dao.fetchFriends(user, "outgoing");
-                break;
-            case FriendOperation.fetch_incoming:
-                users = dao.fetchFriends(user, "incoming");
-                break;
+        try {
+            switch (req.getOperation()) {
+                case FriendOperation.send:
+                    if (!dao.existsByUsername(req.getUser1())) {
+                        return new FriendRes("Username does not exist!", null, null);
+                    }
+                    dao.sendFriendReq(user, req.getUser2());
+                    break;
+                case FriendOperation.accept:
+                    dao.acceptFriendReq(user, req.getUser2());
+                    break;
+                case FriendOperation.deny:
+                    dao.denyFriendReq(user, req.getUser2());
+                    break;
+                case FriendOperation.fetch_accepted:
+                    users = dao.fetchFriends(user, "accepted");
+                    break;
+                case FriendOperation.fetch_outgoing:
+                    users = dao.fetchFriends(user, "outgoing");
+                    break;
+                case FriendOperation.fetch_incoming:
+                    users = dao.fetchFriends(user, "incoming");
+                    break;
+            }
+        }catch (SQLException e){
+            return new FriendRes("DB error! " + e.getMessage(), null, null);
         }
-    }catch (SQLException e){
-        return new FriendRes("DB error! " + e.getMessage(), null, null);
-    }
         return new FriendRes("success", req.getOperation(), users);
     }
 
