@@ -68,7 +68,7 @@ public class UserDao {
             PreparedStatement ps = con.prepareStatement(sql);) {
             ps.setString(1, user1);
             ps.setString(2, user2);
-            ps.executeQuery();
+            ps.executeUpdate();
         }
     }
 
@@ -78,7 +78,7 @@ public class UserDao {
             PreparedStatement ps = con.prepareStatement(sql);) {
             ps.setString(1, user1);
             ps.setString(2, user2);
-            ps.executeQuery();
+            ps.executeUpdate();
         }
     }
 
@@ -88,7 +88,7 @@ public class UserDao {
             PreparedStatement ps = con.prepareStatement(sql);) {
             ps.setString(1, user1);
             ps.setString(2, user2);
-            ps.executeQuery();
+            ps.executeUpdate();
         }
     }
 
