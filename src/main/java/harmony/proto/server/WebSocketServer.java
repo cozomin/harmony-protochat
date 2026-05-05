@@ -24,28 +24,6 @@ public class WebSocketServer {
      * @see <a href="https://github.com/netty/netty/wiki/Netty-4.2-Migration-Guide#new-best-practices">Migration guide</a>
      */
     public void start() throws InterruptedException, SQLException {
-//        db_config db_conf = new db_config("jdbc:postgresql://localhost:5432/harmony", "postgres",
-//                    "SQLpa55", 4);
-//
-//        connection_manager.init(db_conf);
-//
-//        DataSource ds = connection_manager.getDataSource();
-//        try {
-//            PreparedStatement statement =  ds.getConnection().prepareStatement("select * from hm_user");
-//            ResultSet rs = statement.executeQuery();
-//            while(rs.next()){
-//                System.out.println(rs.getString("username") + ' ' + rs.getString("pass"));
-//            }
-//        }catch (SQLException e){
-//            System.out.println("Caught SQLexception" + e.getMessage());
-//        }
-//        UserDao userDao = new UserDao(ds);
-//        System.out.println(userDao.existsById(4L));
-//        ChatDao chatDao = new ChatDao(ds);
-//        List<Chat> chats = new ArrayList<Chat>();
-//        chats = chatDao.findUserChats(1);
-//        System.out.println(chats.get(0).getChatName());
-
         db_config db_conf = new db_config("jdbc:postgresql://localhost:5432/harmony", "postgres", "SQLpa55", 4);
         connection_manager.init(db_conf);
         System.out.println("Connceted to DB!\n");

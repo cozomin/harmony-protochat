@@ -7,36 +7,36 @@ import harmony.proto.client.ui.LoginPanel;
 import javax.swing.*;
 
 public class LoginPresenter {
-    private final LoginPanel view;
+    private final LoginPanel loginView;
     private final WebSocketClient client;
     private final ClientPresenter coordinator;
 
-    public LoginPresenter(LoginPanel view, WebSocketClient client, ClientPresenter coordinator) {
-        this.view = view;
+    public LoginPresenter(LoginPanel loginView, WebSocketClient client, ClientPresenter coordinator) {
+        this.loginView = loginView;
         this.client = client;
         this.coordinator = coordinator;
         bind();
     }
 
-    //binding associates a function to an ui element
+    //binding associates a backend function to an ui element
     private void bind() {
-        view.setLoginAction(e -> login());
-        view.setRegisterAction(e -> coordinator.navigateTo(PaneSelector.REGISTER));
+        loginView.setLoginAction(e -> login());
+        loginView.setRegisterAction(e -> coordinator.navigateTo(PaneSelector.REGISTER));
     }
 
     private void login() {
-        view.clearError();
+        loginView.clearError();
 
-        String username = view.getTxtUsername();
-        String password = view.getTxtPassword();
+        String username = loginView.getTxtUsername();
+        String password = loginView.getTxtPassword();
 
         if (username == null || username.isBlank() || password == null || password.isBlank()) {
-            view.showError("Please fill all the fields");
+            loginView.showError("Please fill all the fields");
             return;
         }
 
-        view.setLoginEnabled(false);
-        view.showError("Signing in...");
+        loginView.setLoginEnabled(false);
+        loginView.showError("Signing in...");
 
         //SwingWorker is designed to handle long-running tasks in a background thread, preventing the GUI from freezing
         new SwingWorker<Boolean, Void>() {
@@ -54,7 +54,7 @@ public class LoginPresenter {
 
             @Override
             protected void done() {
-                view.setLoginEnabled(true);
+                loginView.setLoginEnabled(true);
 
                 boolean success = false;
                 try {
@@ -64,7 +64,7 @@ public class LoginPresenter {
                 }
 
                 if (success) {
-                    view.clearError();
+                    loginView.clearError();
                     try {
                         coordinator.onLoginSuccess();
                     } catch (Exception e) {
@@ -72,7 +72,7 @@ public class LoginPresenter {
                     }
                 } else {
                     String backendMessage = client.getLoginFailureReason();
-                    view.showError(
+                    loginView.showError(
                             errorMessage != null && !errorMessage.isBlank()
                                     ? errorMessage
                                     : (backendMessage != null && !backendMessage.isBlank()

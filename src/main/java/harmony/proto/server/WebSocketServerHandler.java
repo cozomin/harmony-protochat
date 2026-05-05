@@ -1,5 +1,6 @@
 package harmony.proto.server;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import harmony.proto.dao.ChatDao;
 import harmony.proto.dao.UserDao;
 import harmony.proto.dto.*;
@@ -103,89 +104,124 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
             //save to database on a different thread
             CompletableFuture.runAsync(() -> {
-                saveToDatabase(messageDTO);
-            }, dbExecutor);
+                Long chatId = messageDTO.getChatId();
 
-            Long chatId = messageDTO.getChatId();
+                List<String> participants = chatMembers.computeIfAbsent(chatId, id -> {
+                    DataSource ds = connection_manager.getDataSource();
+                    ChatDao chatDao = new ChatDao(ds);
 
-            List<String> participants = chatMembers.computeIfAbsent(chatId, id -> {
-                DataSource ds = connection_manager.getDataSource();
-                ChatDao chatDao = new ChatDao(ds);
+                    try {
+                        return chatDao.findUsersInChat(id);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        return new  ArrayList<>();
+                    }
+                });
 
                 try {
-                    return chatDao.findUsersInChat(id);
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                    return new  ArrayList<>();
-                }
-            });
+                    String jsonm = mapper.writeValueAsString(messageDTO);
+                    TextWebSocketFrame frame = new TextWebSocketFrame(jsonm);
 
-            try {
-                String jsonm = mapper.writeValueAsString(messageDTO);
-                TextWebSocketFrame frame = new TextWebSocketFrame(jsonm);
-
-                for (String username : participants) {
-                    Channel userChannel = onlineUsers.get(username);
-                    if(userChannel != null && userChannel.isActive()) {
-                        userChannel.writeAndFlush(frame.retainedDuplicate());
+                    for (String username : participants) {
+                        Channel userChannel = onlineUsers.get(username);
+                        if(userChannel != null && userChannel.isActive()) {
+                            userChannel.writeAndFlush(frame.retainedDuplicate());
+                        }
                     }
+
+                    frame.release();
+
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
 
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+                saveToDatabase(messageDTO);
+            }, dbExecutor);
         }
 
         else if (dto instanceof MessageReq req){
-            MessageRes res = processMessageReq(req);
-            String jsonRes = mapper.writeValueAsString(res);
-            TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
-            ctx.channel().writeAndFlush(frame);
+            CompletableFuture.runAsync(() -> {
+                MessageRes res = processMessageReq(req);
+                String jsonRes = null;
+                try {
+                    jsonRes = mapper.writeValueAsString(res);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+                ctx.channel().writeAndFlush(frame);
+            }, dbExecutor);
         }
         else if(dto instanceof SignUpReq req){
-            LoginRes res = processSignUpReq(req);
-            String jsonRes = mapper.writeValueAsString(res);
-            TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
-            ctx.channel().writeAndFlush(frame);
+            CompletableFuture.runAsync(() -> {
+                LoginRes res = processSignUpReq(req);
+                String jsonRes = null;
+                try {
+                    jsonRes = mapper.writeValueAsString(res);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+                ctx.channel().writeAndFlush(frame);
+            }, dbExecutor);
         }
         else if (dto instanceof LoginReq login) {
-            LoginRes res = processLoginReq(login, ctx);
-            String jsonRes = mapper.writeValueAsString(res);
-            TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
-            ctx.channel().writeAndFlush(frame);
+            CompletableFuture.runAsync(() -> {
+                LoginRes res = processLoginReq(login, ctx);
+                String jsonRes = null;
+                try {
+                    jsonRes = mapper.writeValueAsString(res);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+                ctx.channel().writeAndFlush(frame);
+            }, dbExecutor);
         }
         else if(dto instanceof ChatReq req){
-            ChatRes res = processChatReq(req);
-            String jsonRes = mapper.writeValueAsString(res);
-            TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
-            ctx.channel().writeAndFlush(frame);
+            CompletableFuture.runAsync(() -> {
+                ChatRes res = processChatReq(req);
+                String jsonRes = null;
+                try {
+                    jsonRes = mapper.writeValueAsString(res);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+                ctx.channel().writeAndFlush(frame);
+            }, dbExecutor);
         }
         else if(dto instanceof FriendReq req){
-            FriendRes res = processFriendReq(req);
-            String jsonRes = mapper.writeValueAsString(res);
-            TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
-            ctx.channel().writeAndFlush(frame);
+            CompletableFuture.runAsync(() -> {
+                FriendRes res = processFriendReq(req);
+                String jsonRes = null;
+                try {
+                    jsonRes = mapper.writeValueAsString(res);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+                ctx.channel().writeAndFlush(frame);
+            }, dbExecutor);
         }
-
-
-        // Notify that chat has been updated?
     }
 
     private void saveToDatabase(MessageDTO msg) {
         DataSource ds = connection_manager.getDataSource();
         MessageDao messageDao = new MessageDao(ds);
 
-        try (Connection conn = ds.getConnection();) {
+        try {
             messageDao.save(msg);
         } catch (SQLException e) {
-            throw new RuntimeException(e);
+            System.err.println("Failed to save message to DB!");
+            e.printStackTrace(); // This will finally show you what SQL error is happening!
         }
     }
 
     private ChatRes processChatReq(ChatReq req){
         DataSource ds = connection_manager.getDataSource();
         ChatDao dao = new ChatDao(ds);
-        List<ChatDTO> chats = new ArrayList<>();
+        List<ChatDTO> chats;
 
         try{
             chats = dao.findUserChats(req.getUsername());
@@ -237,13 +273,13 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
     private MessageRes processMessageReq(MessageReq req) {
         DataSource ds = connection_manager.getDataSource();
         MessageDao messageDao = new MessageDao(ds);
-        MessageRes res = new MessageRes();
 
         try {
             List<MessageDTO> messages = messageDao.findRecentMessages(req.getChatID(), 200);
 
             if (messages == null || messages.isEmpty()) {
-                return new MessageRes("no messages", 0L, messages);
+//                return new MessageRes("no messages", 0L, messages);
+                return new MessageRes("success", 0L, messages);
             }
 
             else return new MessageRes("success", (long) messages.size(), messages);
@@ -262,14 +298,20 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         try {
             switch (req.getOperation()) {
                 case FriendOperation.send:
-                    if (!dao.existsByUsername(req.getUser1())) {
+                    if (req.getUser1().equals(req.getUser2()))
+                    {
+                        return new FriendRes("You can't be friends with yourself :(", null, null);
+                    }
+                    if (!dao.existsByUsername(req.getUser2())) {
                         return new FriendRes("Username does not exist!", null, null);
+                    }
+                    if (dao.friendExists(req.getUser1(), req.getUser2()) > 0) {
+                        return new FriendRes("Friendship already exists or is pending!", null, null);
                     }
                     dao.sendFriendReq(user, req.getUser2());
                     break;
                 case FriendOperation.accept:
                     dao.acceptFriendReq(user, req.getUser2());
-
                     break;
                 case FriendOperation.deny:
                     dao.denyFriendReq(user, req.getUser2());
@@ -285,6 +327,9 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                     break;
             }
         }catch (SQLException e){
+            if (e.getMessage().contains("already exists")) {
+                return new FriendRes(e.getMessage(), null, null);
+            }
             return new FriendRes("DB error! " + e.getMessage(), null, null);
         }
         return new FriendRes("success", req.getOperation(), users);

@@ -1,11 +1,6 @@
 package harmony.proto.client.ui;
 
-import com.formdev.flatlaf.FlatLaf;
-import com.formdev.flatlaf.fonts.inter.FlatInterFont;
-import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import harmony.proto.client.PaneSelector;
-import harmony.proto.client.backend.WebSocketClient;
-import harmony.proto.client.presenter.ClientPresenter;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
@@ -19,7 +14,7 @@ public class ClientUI extends JFrame {
     //Each section of the app uses a different screen => each screen is a different panel
     private final LoginPanel loginPanel = new LoginPanel();
     private final RegisterPanel registerPanel = new RegisterPanel();
-    private final ChatPanel chatPanel = new ChatPanel();
+    private final InboxPanel inboxPanel = new InboxPanel();
 
     //They are glued together by the cardLayout and JPanel cards
 
@@ -37,9 +32,10 @@ public class ClientUI extends JFrame {
         //each panel needs to have a name for identification
         cards.add(loginPanel, PaneSelector.LOGIN.name());
         cards.add(registerPanel, PaneSelector.REGISTER.name());
-        cards.add(chatPanel, PaneSelector.CHAT.name());
+        cards.add(inboxPanel, PaneSelector.INBOX.name());
 
         setContentPane(cards);
+        cardLayout.show(cards, PaneSelector.LOGIN.name());
     }
 
     //Showing a specific panel at a time
@@ -55,8 +51,8 @@ public class ClientUI extends JFrame {
         return registerPanel;
     }
 
-    public ChatPanel getChatView() {
-        return chatPanel;
+    public InboxPanel getInboxView() {
+        return inboxPanel;
     }
 
 //    public static void main(String[] args) {

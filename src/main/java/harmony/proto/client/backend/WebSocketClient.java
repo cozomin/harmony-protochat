@@ -37,6 +37,7 @@ public final class WebSocketClient {
     static final int MAX_CONTENT_LENGTH = 8192;
 
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
+    private LiveMessageListener savedListener;
 
     private EventLoopGroup group;
     private Channel channel;
@@ -46,7 +47,7 @@ public final class WebSocketClient {
     private String username;
 
     public WebSocketClient() throws Exception{
-        connect();
+//        connect();
     }
 
     public synchronized void connect() throws Exception {
@@ -90,6 +91,10 @@ public final class WebSocketClient {
                 )
         );
 
+        if (savedListener != null) {
+            handler.setLiveMessageListener(savedListener);
+        }
+
         Bootstrap b = new Bootstrap();
         b.group(group)
                 .channel(NioSocketChannel.class)
@@ -119,7 +124,7 @@ public final class WebSocketClient {
 
         LoginReq loginReq = new LoginReq(username, password);
         String json = mapper.writeValueAsString(loginReq);
-        channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
+        channel.writeAndFlush(new TextWebSocketFrame(json));
 
         LoginRes loginRes = handler.awaitLoginResponse();
         if (loginRes.isSuccess()){
@@ -135,7 +140,7 @@ public final class WebSocketClient {
 
         SignUpReq signUpReq = new SignUpReq(username, password);
         String json = mapper.writeValueAsString(signUpReq);
-        channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
+        channel.writeAndFlush(new TextWebSocketFrame(json));
 
         LoginRes loginRes = handler.awaitLoginResponse();
         if (loginRes.isSuccess()){
@@ -150,7 +155,7 @@ public final class WebSocketClient {
         String username = handler.getCurrentUsername();
         ChatReq chatReq = new ChatReq(username);
         String json = mapper.writeValueAsString(chatReq);
-        channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
+        channel.writeAndFlush(new TextWebSocketFrame(json));
 
         ChatRes chatRes = handler.awaitChatResponse();
         if(chatRes.isSuccess()){
@@ -166,7 +171,7 @@ public final class WebSocketClient {
         String user1 = handler.getCurrentUsername();
         FriendReq friendReq = new FriendReq(operation, user1, user2);
         String json = mapper.writeValueAsString(friendReq);
-        channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
+        channel.writeAndFlush(new TextWebSocketFrame(json));
 
         FriendRes friendRes = handler.awaitFriendOpResponse();
 
@@ -180,14 +185,15 @@ public final class WebSocketClient {
         MessageReq req = new MessageReq(chatID);
 
         String json = mapper.writeValueAsString(req);
-        channel.writeAndFlush(new TextWebSocketFrame(json)).sync();
+        channel.writeAndFlush(new TextWebSocketFrame(json));
 
         MessageRes res = handler.awaitMessageResponse();
 
-        if(res.isSuccess()){
+        if(res.isSuccess() && res.getChatMessages() != null){
             return res.getChatMessages();
         }
-        return null;
+
+        return new java.util.ArrayList<>();
 
     }
 
@@ -195,7 +201,6 @@ public final class WebSocketClient {
         MessageDTO messageDTO = new MessageDTO();
         messageDTO.setContent(input);
         messageDTO.setSenderId(handler.getCurrentUsername());
-//        messageDTO.setChatId(1L);   // test chatID
         messageDTO.setChatId(chatID);
         messageDTO.setSentAt(Instant.now());
         messageDTO.setMessageType("regular");
@@ -227,10 +232,6 @@ public final class WebSocketClient {
         return channel != null && channel.isActive();
     }
 
-//    public String getCurrentUsername() {
-//        return handler != null ? handler.getCurrentUsername() : null;
-//    }
-
     public String getCurrentUsername() {
         return handler != null ? username : null;
     }
@@ -244,6 +245,7 @@ public final class WebSocketClient {
     }
 
     public void setLiveMessageListener(LiveMessageListener listener) {
+        this.savedListener = listener;
         if (handler != null) {
             handler.setLiveMessageListener(listener);
         }

@@ -48,35 +48,54 @@ public class ChatDao {
 
 
 
-    public List<ChatDTO> findUserChats(String username) throws SQLException{
+    public List<ChatDTO> findUserChats(String username) throws SQLException {
         //selects all chats that userID is a member of
-        String sql = "select chatID, chatName, isGroup, updated_at\n" +
+        String groupSql = "select chatID, chatName, isGroup, updated_at\n" +
                 "from chat join chat_member using (chatID)\n" +
-                "where memberID = ?;";
+                "where memberID = ? and isgroup = true";
+
+        String dmSql = "select c.chatID, c.isGroup, c.updated_at, cm_other.memberid as dmName\n" +
+                "from chat c join chat_member cm on (c.chatid = cm.chatid) join chat_member cm_other on (c.chatid = cm_other.chatid)\n" +
+                "where cm.memberID = ? and c.isgroup = false and cm_other.memberid != ?;";
+
         List<ChatDTO> chatDTOS = new ArrayList<>();
 
-        try (Connection con = dataSource.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, username);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    ChatDTO chatDTO = new ChatDTO();
-                    chatDTO.setChatID(rs.getLong("chatID"));
-                    chatDTO.setGroup(rs.getBoolean("isGroup"));
-//                    chat.setUpdated_at(rs.getTimestamp("updated_at").toInstant());
-                    //updated_at is not yet implemented, if null will crash server
-                    if(chatDTO.isGroup()){
+        try (Connection con = dataSource.getConnection();) {
+            try (PreparedStatement psGroup = con.prepareStatement(groupSql)) {
+                psGroup.setString(1, username);
+                try (ResultSet rs = psGroup.executeQuery()) {
+                    while (rs.next()) {
+                        ChatDTO chatDTO = new ChatDTO();
+                        chatDTO.setChatID(rs.getLong("chatID"));
+                        chatDTO.setGroup(rs.getBoolean("isGroup"));
+                        //                    chat.setUpdated_at(rs.getTimestamp("updated_at").toInstant());
+                        //updated_at is not yet implemented, if null will crash server
                         chatDTO.setChatName(rs.getString("chatName"));
+
+                        chatDTOS.add(chatDTO);
                     }
-                    else {
-                        //if it's a DM, gives chat the name of the other user
-                        chatDTO.setChatName(findDmName(username, chatDTO.getChatID()));
-                    }
-                    chatDTOS.add(chatDTO);
                 }
             }
+
+            try (PreparedStatement psDm = con.prepareStatement(dmSql);) {
+                psDm.setString(1, username);
+                psDm.setString(2, username);
+
+                try (ResultSet rs = psDm.executeQuery()) {
+                    while (rs.next()) {
+                        ChatDTO chatDTO = new ChatDTO();
+                        chatDTO.setChatID(rs.getLong("chatID"));
+                        chatDTO.setGroup(rs.getBoolean("isGroup"));
+//                    chat.setUpdated_at(rs.getTimestamp("updated_at").toInstant());
+                        //updated_at is not yet implemented, if null will crash server
+                        chatDTO.setChatName(rs.getString("dmName"));
+                        chatDTOS.add(chatDTO);
+                    }
+                }
+            }
+
+            return chatDTOS;
         }
-        return chatDTOS;
     }
 
     private String findDmName(String username, long chatID) throws SQLException{
@@ -106,8 +125,13 @@ public class ChatDao {
         PreparedStatement ps = con.prepareStatement(sql);
 
         ps.setString(1, name);
-        ResultSet rs = ps.executeQuery();
-        chatID = rs.getLong("chatID");
+        try (ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                chatID = rs.getLong("chatID");
+            } else {
+                throw new SQLException("Failed to create Group: No chatID returned.");
+            }
+        }
 
         sql = "insert into chat_member values(" + chatID + ", ?, 'creator') ";
         ps = con.prepareStatement(sql);
@@ -118,8 +142,9 @@ public class ChatDao {
             sql = "insert into chat_member values(" + chatID + ", ?, 'member') ";
             ps = con.prepareStatement(sql);
             ps.setString(1, user);
-            ps.executeUpdate();
+            ps.addBatch();
         }
+        ps.executeBatch();
     }
 
     public void touchLastAccess(Long chatId, String username) throws SQLException {

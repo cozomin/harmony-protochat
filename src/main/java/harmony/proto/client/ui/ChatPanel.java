@@ -11,8 +11,8 @@ import java.util.List;
 
 public class ChatPanel extends JPanel {
 
+    private final JPanel root =  new JPanel(new BorderLayout());
     private final JTextField txtMessage = new JTextField();
-//    private final JTextField userIdField = new JTextField("", 10);
     private final JButton bSend = new JButton("Send")
     {
         @Override
@@ -20,13 +20,6 @@ public class ChatPanel extends JPanel {
             return true;
         }
     };
-    private final JButton loadButton = new JButton("Refresh");
-    private final JButton logoutButton = new JButton("Logout");
-
-    private final DefaultListModel<ChatDTO> groupsListModel = new DefaultListModel<>();
-    private final DefaultListModel<ChatDTO> dmsListModel = new DefaultListModel<>();
-    private final JList<ChatDTO> groupsList = new JList<>(groupsListModel);
-    private final JList<ChatDTO> dmsList = new JList<>(dmsListModel);
 
     private final JTextArea messagesArea = new JTextArea();
     private final JLabel headerLabel = new JLabel("Not connected");
@@ -36,39 +29,9 @@ public class ChatPanel extends JPanel {
     }
 
     private void init() {
-        JPanel root = new JPanel(new BorderLayout(12, 12));
-        setLayout(new BorderLayout(12, 12));
-        setBorder(new EmptyBorder(12, 12, 12, 12));
+        root.setLayout(new BorderLayout(12, 12));
+        root.setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-//        topBar.add(new JLabel("User ID:"));
-//        userIdField.setEditable(false);
-//        topBar.add(userIdField);
-        topBar.add(loadButton);
-        topBar.add(logoutButton);
-
-        JPanel sideBar = new JPanel();
-        sideBar.setLayout(new BoxLayout(sideBar, BoxLayout.Y_AXIS));
-        sideBar.setPreferredSize(new Dimension(320, 0));
-
-        JLabel groupsLabel = new JLabel("Groups");
-        groupsLabel.setBorder(new EmptyBorder(0, 0, 6, 0));
-
-        JLabel dmsLabel = new JLabel("Direct Messages");
-        dmsLabel.setBorder(new EmptyBorder(12, 0, 6, 0));
-
-        groupsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        dmsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        groupsList.setCellRenderer(new ChatRenderer());
-        dmsList.setCellRenderer(new ChatRenderer());
-
-        sideBar.add(groupsLabel);
-        sideBar.add(new JScrollPane(groupsList));
-        sideBar.add(dmsLabel);
-        sideBar.add(new JScrollPane(dmsList));
-
-        JPanel content = new JPanel(new BorderLayout(8, 8));
         JPanel bottomBar = new JPanel(new BorderLayout(2, 2));
 
         headerLabel.setFont(headerLabel.getFont().deriveFont(Font.BOLD, 18f));
@@ -82,13 +45,12 @@ public class ChatPanel extends JPanel {
         bottomBar.add(txtMessage,  BorderLayout.CENTER);
         bottomBar.add(bSend,  BorderLayout.EAST);
 
-        content.add(headerLabel, BorderLayout.NORTH);
-        content.add(new JScrollPane(messagesArea), BorderLayout.CENTER);
-        content.add(bottomBar, BorderLayout.SOUTH);
+        root.add(headerLabel, BorderLayout.NORTH);
+        root.add(new JScrollPane(messagesArea), BorderLayout.CENTER);
+        root.add(bottomBar, BorderLayout.SOUTH);
 
-        add(topBar, BorderLayout.NORTH);
-        add(sideBar, BorderLayout.WEST);
-        add(content, BorderLayout.CENTER);
+        this.setLayout(new BorderLayout());
+        this.add(root, BorderLayout.CENTER);
     }
 
     public String getTxtMessage() {
@@ -96,41 +58,9 @@ public class ChatPanel extends JPanel {
     }
     public void setMessage(String message) {}
 
-    public JList<ChatDTO> getDmsList() {
-        return dmsList;
-    }
-
-    public JList<ChatDTO> getGroupsList() {
-        return groupsList;
-    }
-
-    public DefaultListModel<ChatDTO> getGroupsListModel() {
-        return groupsListModel;
-    }
-
-    public DefaultListModel<ChatDTO> getDmsListModel() {
-        return dmsListModel;
-    }
-
     public void setSendMessageAction(ActionListener actionListener) {
         txtMessage.addActionListener(actionListener);
         bSend.addActionListener(actionListener);
-    }
-
-    public void setLogoutAction(ActionListener actionListener) {
-        logoutButton.addActionListener(actionListener);
-    }
-
-    public void setGroupListAction(ListSelectionListener listSelectionListener) {
-        groupsList.addListSelectionListener(listSelectionListener);
-    }
-
-    public void setDmsListAction(ListSelectionListener listSelectionListener) {
-        dmsList.addListSelectionListener(listSelectionListener);
-    }
-
-    public void setLoadAction(ActionListener actionListener) {
-        loadButton.addActionListener(actionListener);
     }
 
     public void setSendEnabled(boolean enabled) {
@@ -151,12 +81,10 @@ public class ChatPanel extends JPanel {
     }
 
     public void showMessage(String message) {
-       messagesArea.append(message);
+        messagesArea.append(message);
     }
 
     public void prepareLoadChats() {
-        groupsListModel.clear();
-        dmsListModel.clear();
         messagesArea.setText("");
     }
 
@@ -166,24 +94,5 @@ public class ChatPanel extends JPanel {
 
     public void clearTxtMessages() {
         SwingUtilities.invokeLater(() -> {txtMessage.setText("");});
-    }
-}
-
-class ChatRenderer extends DefaultListCellRenderer {
-    @Override
-    public Component getListCellRendererComponent(
-            JList<?> list,
-            Object value,
-            int index,
-            boolean isSelected,
-            boolean cellHasFocus
-    ) {
-        super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-
-        if (value instanceof ChatDTO chat) {
-            String prefix = chat.isGroup() ? "# " : "@ ";
-            setText(prefix + chat.getChatName() + "  (" + chat.getChatID() + ")");
-        }
-        return this;
     }
 }
