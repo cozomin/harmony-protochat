@@ -88,7 +88,7 @@ public class ChatPresenter {
                     }
 
                     if (messages.isEmpty()){
-                        chatView.showMessage("No messages");
+                        chatView.showMessage("No messages\n");
                     }
                 } catch(Exception e){
                     chatView.showMessage(e.getMessage());

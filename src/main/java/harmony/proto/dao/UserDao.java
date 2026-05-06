@@ -204,7 +204,7 @@ public class UserDao {
         }
         return users;
     }
-
+    //TODO: incoming is useless
     private static String getString(String fetchType) {
         String sql;
 
@@ -216,7 +216,7 @@ public class UserDao {
         else if ("outgoing".equals(fetchType)) {
             sql = "select user2 as friend from user_friend where user1 = ? and status = 'outgoing'";
         }
-        else {
+        else {//incoming
             sql = "select user1 as friend from user_friend where user2 = ? and status = 'outgoing'";
         }
         return sql;
