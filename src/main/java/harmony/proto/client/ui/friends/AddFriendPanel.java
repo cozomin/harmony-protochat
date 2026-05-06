@@ -48,6 +48,7 @@ public class AddFriendPanel extends JPanel {
 
     public String getUsernameInput() { return txtUsername.getText().trim(); }
     public void clearInput() { txtUsername.setText(""); }
+    public void clearStatusMessage() { statusLabel.setText(" "); }
     public void setStatusMessage(String message, Color color) {
         statusLabel.setText(message);
         statusLabel.setForeground(color);

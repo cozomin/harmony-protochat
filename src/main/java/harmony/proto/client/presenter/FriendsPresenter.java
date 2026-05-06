@@ -181,6 +181,8 @@ public class FriendsPresenter {
                         }
                     }
 
+                    friendsView.setList(targetList, res.getOperation());
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

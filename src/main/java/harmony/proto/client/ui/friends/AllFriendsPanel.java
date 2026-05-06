@@ -8,7 +8,7 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 
 public class AllFriendsPanel extends JPanel {
-    private final DefaultListModel<UserDTO> friendsListModel = new DefaultListModel<>();
+    private DefaultListModel<UserDTO> friendsListModel = new DefaultListModel<>();
     private final JList<UserDTO> friendsList = new JList<>(friendsListModel);
 
     private final JButton messageButton = new JButton("Message");
@@ -48,6 +48,9 @@ public class AllFriendsPanel extends JPanel {
     public DefaultListModel<UserDTO> getFriendsListModel() { return friendsListModel; }
     public JList<UserDTO> getFriendsList() { return friendsList; }
 
+    public void setList(DefaultListModel<UserDTO> listModel) {
+        this.friendsListModel = listModel;
+    }
 }
 
 class FriendsListRenderer extends  DefaultListCellRenderer {

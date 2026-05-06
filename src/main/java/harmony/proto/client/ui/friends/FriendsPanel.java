@@ -68,6 +68,14 @@ public class FriendsPanel extends JPanel {
         }
     }
 
+    public void setList(DefaultListModel<UserDTO> listModel, FriendOperation operation) {
+        if (operation == FriendOperation.fetch_accepted) {
+            allFriendsPanel.setList(listModel);
+        } else if (operation == FriendOperation.fetch_incoming || operation == FriendOperation.fetch_outgoing) {
+            pendingFriendsPanel.setList(listModel);
+        }
+    }
+
     public DefaultListModel<UserDTO> getList(FriendOperation operation) {
         if (operation == FriendOperation.fetch_accepted) {
             return allFriendsPanel.getFriendsListModel();

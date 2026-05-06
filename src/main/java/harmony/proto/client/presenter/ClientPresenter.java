@@ -4,6 +4,7 @@ import harmony.proto.client.PaneSelector;
 import harmony.proto.client.backend.WebSocketClient;
 import harmony.proto.client.ui.ClientUI;
 import harmony.proto.client.ui.friends.FriendsPaneSelector;
+import harmony.proto.dto.req.FriendOperation;
 
 // This presenter acts as a coordinator for the specific ones
 
@@ -32,12 +33,18 @@ public class ClientPresenter {
         inboxPresenter.loadSessionInfo();
         mainView.showPane(PaneSelector.INBOX);
         inboxPresenter.loadChats();
+        inboxPresenter.getFriendsPresenter().refreshAllLists();
         inboxPresenter.getInboxView().showPane(PaneSelector.FRIENDS);
         inboxPresenter.getFriendsPresenter().refreshAllLists();
     }
 
     public void onLogout() {
         mainView.getLoginView().clearPassword();
+        mainView.getRegisterView().clearPassword();
+        mainView.getInboxView().getFriendsPanel().getAddFriendPanel().clearStatusMessage();
+        mainView.getInboxView().getFriendsPanel().getAddFriendPanel().clearInput();
+        mainView.getInboxView().getFriendsPanel().prepareLoadFriends(FriendOperation.fetch_accepted);
+        mainView.getInboxView().getFriendsPanel().prepareLoadFriends(FriendOperation.fetch_outgoing);
         mainView.showPane(PaneSelector.LOGIN);
     }
 

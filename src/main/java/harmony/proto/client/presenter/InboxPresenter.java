@@ -39,6 +39,7 @@ public class InboxPresenter {
         inboxView.setLoadAction(e -> {
             chatPresenter.loadSessionInfo();
             loadChats();
+            friendsPresenter.refreshAllLists();
         });
 
         inboxView.setGroupListAction(e -> {

@@ -8,7 +8,7 @@ import java.awt.*;
 import java.awt.event.ActionListener;
 
 public class PendingFriendsPanel extends JPanel {
-    private final DefaultListModel<UserDTO> pendingListModel = new DefaultListModel<>();
+    private DefaultListModel<UserDTO> pendingListModel = new DefaultListModel<>();
     private final JList<UserDTO> pendingList = new JList<>(pendingListModel);
 
     private final JButton acceptButton = new JButton("Accept");
@@ -47,4 +47,8 @@ public class PendingFriendsPanel extends JPanel {
 
     public DefaultListModel<UserDTO> getPendingListModel() { return pendingListModel; }
     public JList<UserDTO> getPendingList() { return pendingList; }
+
+    public void setList(DefaultListModel<UserDTO> listModel) {
+        this.pendingListModel = listModel;
+    }
 }
