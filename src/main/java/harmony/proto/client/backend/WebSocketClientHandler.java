@@ -83,19 +83,19 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     public synchronized void prepareForFriendOp(){ friendOpFuture = new CompletableFuture<>(); }
 
     public LoginRes awaitLoginResponse() throws Exception {
-        return loginFuture.get(5, TimeUnit.SECONDS);
+        return loginFuture.get(10, TimeUnit.SECONDS);
     }
 
     public ChatRes awaitChatResponse() throws Exception{
-        return chatFuture.get(5, TimeUnit.SECONDS);
+        return chatFuture.get(10, TimeUnit.SECONDS);
     }
 
     public MessageRes awaitMessageResponse() throws Exception{
-        return messageFuture.get(5, TimeUnit.SECONDS);
+        return messageFuture.get(10, TimeUnit.SECONDS);
     }
 
     public FriendRes awaitFriendOpResponse() throws Exception{
-        return friendOpFuture.get(5, TimeUnit.SECONDS);
+        return friendOpFuture.get(10, TimeUnit.SECONDS);
     }
 
     @Override
