@@ -74,9 +74,15 @@ public class InboxPanel extends JPanel {
         sideBar.add(dmsLabel);
         sideBar.add(new JScrollPane(dmsList));
 
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sideBar, contentPanel);
+        splitPane.setDividerLocation(200);
+        splitPane.setDividerSize(5);
+        splitPane.setContinuousLayout(true);
+
         add(topBar, BorderLayout.NORTH);
-        add(sideBar, BorderLayout.WEST);
-        add(contentPanel, BorderLayout.CENTER);
+//        add(sideBar, BorderLayout.WEST);
+        add(splitPane);
+//        add(contentPanel, BorderLayout.CENTER);
 
         cardLayout.show(contentPanel, PaneSelector.FRIENDS.name());
     }

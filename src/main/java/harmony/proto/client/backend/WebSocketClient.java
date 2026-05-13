@@ -150,7 +150,7 @@ public final class WebSocketClient {
         else return false;
     }
 
-    public boolean fetchChats() throws Exception {
+    public synchronized boolean fetchChats() throws Exception {
         handler.prepareForChats();
         String username = handler.getCurrentUsername();
         ChatReq chatReq = new ChatReq(username);
@@ -165,7 +165,7 @@ public final class WebSocketClient {
         else return false;
     }
 
-    public FriendRes friendOperation(FriendOperation operation, String user2) throws Exception{
+    public synchronized FriendRes friendOperation(FriendOperation operation, String user2) throws Exception{
         //OBS! user2 can be null, depending on the operation. User2 would be taken from a text box
         handler.prepareForFriendOp();
         String user1 = handler.getCurrentUsername();
@@ -179,7 +179,7 @@ public final class WebSocketClient {
 
     }
 
-    public List<MessageDTO> fetchMessages(Long chatID) throws Exception {
+    public synchronized List<MessageDTO> fetchMessages(Long chatID) throws Exception {
         handler.prepareForMessages();
         String username = handler.getCurrentUsername();
         MessageReq req = new MessageReq(chatID);
@@ -211,6 +211,16 @@ public final class WebSocketClient {
         //Sends the json through a TextWebSocketFrame
         WebSocketFrame frame = new TextWebSocketFrame(jsonMsg);
         channel.writeAndFlush(frame);
+    }
+
+    public void createGroup(String groupName, List<String> members) throws Exception {
+        GroupCreationReq groupCreationReq = new GroupCreationReq();
+        groupCreationReq.setName(groupName);
+        groupCreationReq.setCreator(username);
+        groupCreationReq.setMembers(members);
+
+        String json = mapper.writeValueAsString(groupCreationReq);
+        channel.writeAndFlush(new TextWebSocketFrame(json));
     }
 
     public synchronized void disconnect() throws Exception {

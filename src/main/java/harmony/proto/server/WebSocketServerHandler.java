@@ -18,7 +18,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -204,6 +203,11 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                 ctx.channel().writeAndFlush(frame);
             }, dbExecutor);
         }
+        else if (dto instanceof GroupCreationReq req) {
+            CompletableFuture.runAsync(() -> {
+                processGroupCreationReq(req);
+            }, dbExecutor);
+        }
     }
 
     private void saveToDatabase(MessageDTO msg) {
@@ -334,6 +338,22 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         }
         return new FriendRes("success", req.getOperation(), users);
     }
+
+    private void processGroupCreationReq(GroupCreationReq req) {
+        DataSource ds = connection_manager.getDataSource();
+        ChatDao chatDao = new ChatDao(ds);
+        try{
+            chatDao.addGroup(req.getName(), req.getCreator(), req.getMembers());
+        }
+        catch (SQLException e){
+            if(e.getMessage().contains("already exists")) {
+                //TODO
+                //response
+                // send a group creation response to all the users to notify them that they've been included in a group
+            }
+        }
+    }
+
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {

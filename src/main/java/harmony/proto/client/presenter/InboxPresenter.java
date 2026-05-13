@@ -95,7 +95,6 @@ public class InboxPresenter {
     }
 
     public void loadChats(){
-        inboxView.prepareLoadChats();
 
         SwingWorker<List<ChatDTO>, Void> worker = new SwingWorker<>() {
             @Override
@@ -108,6 +107,8 @@ public class InboxPresenter {
                 try{
                     List<ChatDTO> chats = get();
                     if (chats != null) {
+                        inboxView.prepareLoadChats();
+
                         for (ChatDTO chat : chats) {
                             if (chat.isGroup()) {
                                 inboxView.getGroupsListModel().addElement(chat);

@@ -119,7 +119,7 @@ public class ChatDao {
     //TODO: add timestamp
 
     public void addGroup(String name, String creator, List<String> users) throws SQLException{
-        String sql = "insert into chat values(default, ?, false) returning chatID";
+        String sql = "insert into chat values(default, ?, true) returning chatID";
         long chatID;
         Connection con = dataSource.getConnection();
         PreparedStatement ps = con.prepareStatement(sql);
@@ -134,17 +134,21 @@ public class ChatDao {
         }
 
         sql = "insert into chat_member values(" + chatID + ", ?, 'creator') ";
-        ps = con.prepareStatement(sql);
-        ps.setString(1, creator);
-        ps.executeUpdate();
-
-        for(var user:users){
-            sql = "insert into chat_member values(" + chatID + ", ?, 'member') ";
-            ps = con.prepareStatement(sql);
-            ps.setString(1, user);
-            ps.addBatch();
+        try(PreparedStatement ps1 = con.prepareStatement(sql);){
+            ps1.setString(1, creator);
+            ps1.executeUpdate();
         }
-        ps.executeBatch();
+
+        sql = "insert into chat_member values(" + chatID + ", ?, 'member') ";
+        try (PreparedStatement ps2 = con.prepareStatement(sql);) {
+            for (var user : users) {
+                System.out.println(user + "\n3");
+
+                ps2.setString(1, user);
+                ps2.addBatch();
+            }
+            ps2.executeBatch();
+        }
     }
 
     public void touchLastAccess(Long chatId, String username) throws SQLException {

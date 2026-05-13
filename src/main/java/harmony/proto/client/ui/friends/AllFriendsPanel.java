@@ -13,6 +13,7 @@ public class AllFriendsPanel extends JPanel {
 
     private final JButton messageButton = new JButton("Message");
     private final JButton removeButton = new JButton("Remove Friend");
+    private final JButton createGroupButton = new JButton("Create Group");
 
     public AllFriendsPanel() {
         init();
@@ -25,16 +26,24 @@ public class AllFriendsPanel extends JPanel {
         JLabel headerLabel = new JLabel("All Friends");
         headerLabel.setFont(headerLabel.getFont().deriveFont(Font.BOLD, 16f));
 
-        friendsList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        friendsList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         friendsList.setCellRenderer(new FriendsListRenderer());
 
-        JPanel bottomBar = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        JPanel bottomBar = new JPanel();
+        bottomBar.setLayout(new BoxLayout(bottomBar, BoxLayout.X_AXIS));
+
+        bottomBar.add(createGroupButton);
+        bottomBar.add(Box.createHorizontalGlue());
         bottomBar.add(messageButton);
         bottomBar.add(removeButton);
 
         add(headerLabel, BorderLayout.NORTH);
         add(new JScrollPane(friendsList), BorderLayout.CENTER);
         add(bottomBar, BorderLayout.SOUTH);
+    }
+
+    public void createGroupButtonAction(ActionListener actionListener) {
+        createGroupButton.addActionListener(actionListener);
     }
 
     public void messageButtonAction(ActionListener actionListener) {
