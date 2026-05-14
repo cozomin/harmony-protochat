@@ -205,7 +205,24 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         }
         else if (dto instanceof GroupCreationReq req) {
             CompletableFuture.runAsync(() -> {
-                processGroupCreationReq(req);
+                GroupCreationRes res = processGroupCreationReq(req);
+                String jsonRes = null;
+                try {
+                    jsonRes = mapper.writeValueAsString(res);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+                for(String member : req.getMembers()){
+                    Channel userChannel = onlineUsers.get(member);
+                    if(userChannel != null && userChannel.isActive()) {
+                        userChannel.writeAndFlush(frame.retainedDuplicate());
+                        //netty has automatic frame release after sending a frame to 1 client
+                        //sending to multiple clients means that we need to overwrite that functionality to avoid runtime errors
+                        //some kind of free after use error
+                    }
+                }
+                frame.release(); // manually release the frame after sending it to the clients
             }, dbExecutor);
         }
     }
@@ -218,7 +235,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             messageDao.save(msg);
         } catch (SQLException e) {
             System.err.println("Failed to save message to DB!");
-            e.printStackTrace(); // This will finally show you what SQL error is happening!
+            e.printStackTrace();
         }
     }
 
@@ -339,18 +356,15 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         return new FriendRes("success", req.getOperation(), users);
     }
 
-    private void processGroupCreationReq(GroupCreationReq req) {
+    private GroupCreationRes processGroupCreationReq(GroupCreationReq req) {
         DataSource ds = connection_manager.getDataSource();
         ChatDao chatDao = new ChatDao(ds);
         try{
             chatDao.addGroup(req.getName(), req.getCreator(), req.getMembers());
+            return new GroupCreationRes(req.getCreator(), "success");
         }
         catch (SQLException e){
-            if(e.getMessage().contains("already exists")) {
-                //TODO
-                //response
-                // send a group creation response to all the users to notify them that they've been included in a group
-            }
+            return new GroupCreationRes(null, "Database failure: " + e.getMessage());
         }
     }
 

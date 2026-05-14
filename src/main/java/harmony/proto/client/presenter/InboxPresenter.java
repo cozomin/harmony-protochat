@@ -63,6 +63,10 @@ public class InboxPresenter {
                 }
             }
         });
+
+        client.setLiveGroupCreationListener( groupCreation -> {
+            loadChats();
+        });
     }
 
     private void logout() {

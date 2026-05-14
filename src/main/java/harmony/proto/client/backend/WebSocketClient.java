@@ -37,7 +37,8 @@ public final class WebSocketClient {
     static final int MAX_CONTENT_LENGTH = 8192;
 
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
-    private LiveMessageListener savedListener;
+    private LiveMessageListener savedMessageListener;
+    private LiveGroupCreationListener savedGroupCreationListener;
 
     private EventLoopGroup group;
     private Channel channel;
@@ -91,8 +92,12 @@ public final class WebSocketClient {
                 )
         );
 
-        if (savedListener != null) {
-            handler.setLiveMessageListener(savedListener);
+        if (savedMessageListener != null) {
+            handler.setLiveMessageListener(savedMessageListener);
+        }
+
+        if  (savedGroupCreationListener != null) {
+            handler.setLiveGroupCreationListener(savedGroupCreationListener);
         }
 
         Bootstrap b = new Bootstrap();
@@ -255,9 +260,16 @@ public final class WebSocketClient {
     }
 
     public void setLiveMessageListener(LiveMessageListener listener) {
-        this.savedListener = listener;
+        this.savedMessageListener = listener;
         if (handler != null) {
             handler.setLiveMessageListener(listener);
+        }
+    }
+
+    public void setLiveGroupCreationListener(LiveGroupCreationListener listener) {
+        this.savedGroupCreationListener = listener;
+        if (handler != null) {
+            handler.setLiveGroupCreationListener(listener);
         }
     }
 }

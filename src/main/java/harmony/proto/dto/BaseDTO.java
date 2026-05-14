@@ -26,7 +26,8 @@ import harmony.proto.dto.res.*;
         @JsonSubTypes.Type(value = SignUpReq.class, name = "SignUpReq"),
         @JsonSubTypes.Type(value = FriendReq.class, name = "FriendReq"),
         @JsonSubTypes.Type(value = FriendRes.class, name = "FriendRes"),
-        @JsonSubTypes.Type(value = GroupCreationReq.class, name = "GroupCreationReq")
+        @JsonSubTypes.Type(value = GroupCreationReq.class, name = "GroupCreationReq"),
+        @JsonSubTypes.Type(value = GroupCreationRes.class, name = "GroupCreationRes")
 })
 
 public abstract class BaseDTO {

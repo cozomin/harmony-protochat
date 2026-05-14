@@ -9,6 +9,8 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 public class InboxPanel extends JPanel {
     private final ChatPanel chatPanel = new ChatPanel();
@@ -25,6 +27,7 @@ public class InboxPanel extends JPanel {
 
     private final DefaultListModel<ChatDTO> groupsListModel = new DefaultListModel<>();
     private final DefaultListModel<ChatDTO> dmsListModel = new DefaultListModel<>();
+    private final DefaultListModel<String> friendsListModel = new DefaultListModel<>();
     private final JList<ChatDTO> groupsList = new JList<>(groupsListModel);
     private final JList<ChatDTO> dmsList = new JList<>(dmsListModel);
 
@@ -73,6 +76,36 @@ public class InboxPanel extends JPanel {
         sideBar.add(new JScrollPane(groupsList));
         sideBar.add(dmsLabel);
         sideBar.add(new JScrollPane(dmsList));
+
+        JPopupMenu sidePopupMenu = new JPopupMenu();
+        sidePopupMenu.add(new JMenuItem("Member list"));
+        sidePopupMenu.add(new JMenuItem("Leave"));
+
+        JPanel groupMembersPanel = new JPanel();
+        groupMembersPanel.setLayout(new BoxLayout(groupMembersPanel, BoxLayout.Y_AXIS));
+        groupMembersPanel.setPreferredSize(new Dimension(320, 0));
+        JLabel groupMembersLabel = new JLabel("Group members");
+
+
+        groupsList.setComponentPopupMenu(sidePopupMenu);
+//        dmsList.setComponentPopupMenu(sidePopupMenu);
+
+//        groupsList.addMouseListener(new MouseAdapter() {
+//            @Override
+//            public void mouseClicked(MouseEvent e){
+//                // Gets the point where the user clicked
+//                Point point = e.getPoint();
+//                // Coverts the point to the closest list item
+//                int index = groupsList.locationToIndex(point);
+//
+//                if(index >= 0 && groupsList.getCellBounds(index, index).contains(point)){
+//                    if (javax.swing.SwingUtilities.isRightMouseButton(e)) {
+//                        groupsList.setSelectedIndex(index);
+//                        sidePopupMenu.show(groupsList, e.getX(), e.getY());
+//                    }
+//                }
+//            }
+//        });
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sideBar, contentPanel);
         splitPane.setDividerLocation(200);

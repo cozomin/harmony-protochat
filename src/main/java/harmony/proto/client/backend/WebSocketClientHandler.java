@@ -3,10 +3,7 @@ package harmony.proto.client.backend;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import harmony.proto.dto.*;
-import harmony.proto.dto.res.ChatRes;
-import harmony.proto.dto.res.FriendRes;
-import harmony.proto.dto.res.LoginRes;
-import harmony.proto.dto.res.MessageRes;
+import harmony.proto.dto.res.*;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -35,7 +32,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private volatile boolean authenticated = false;
     private volatile String currentUsername;
     private volatile String loginFailureReason;
+
     private volatile LiveMessageListener liveMessageListener;
+    private volatile LiveGroupCreationListener liveGroupCreationListener;
 
     private volatile CompletableFuture<LoginRes> loginFuture;
     private volatile CompletableFuture<ChatRes> chatFuture;
@@ -64,6 +63,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
     public void setLiveMessageListener(LiveMessageListener listener) {
         this.liveMessageListener = listener;
+    }
+    public void setLiveGroupCreationListener(LiveGroupCreationListener listener){
+        this.liveGroupCreationListener = listener;
     }
 
     public synchronized void prepareForLogin() {
@@ -170,6 +172,11 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                 }
                 else if (dto instanceof ChatRes res){
                     chatFuture.complete(res);
+                }
+                else if (dto instanceof GroupCreationRes res){
+                    if(liveGroupCreationListener != null){
+                        liveGroupCreationListener.onNewGroupCreation(res);
+                    }
                 }
 
             } catch (Exception e) {
