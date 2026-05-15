@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import harmony.proto.dto.*;
 import harmony.proto.dto.req.*;
-import harmony.proto.dto.res.ChatRes;
-import harmony.proto.dto.res.FriendRes;
-import harmony.proto.dto.res.LoginRes;
-import harmony.proto.dto.res.MessageRes;
+import harmony.proto.dto.res.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -200,6 +197,20 @@ public final class WebSocketClient {
 
         return new java.util.ArrayList<>();
 
+    }
+
+    public synchronized List<String> fetchChatMembers(Long chatID) throws Exception {
+        handler.prepareForChatMembers();
+        ChatMembersReq req = new ChatMembersReq(chatID);
+        String json = mapper.writeValueAsString(req);
+        channel.writeAndFlush(new TextWebSocketFrame(json));
+
+        ChatMembersRes res = handler.awaitChatMembersResponse();
+        if(res.isSuccess() && res.getChatMembers() != null){
+            return res.getChatMembers();
+        }
+
+        return new java.util.ArrayList<>();
     }
 
     public void sendMessage(String input, Long chatID) throws Exception {

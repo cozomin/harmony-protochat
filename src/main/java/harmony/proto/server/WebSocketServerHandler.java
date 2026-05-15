@@ -225,6 +225,19 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                 frame.release(); // manually release the frame after sending it to the clients
             }, dbExecutor);
         }
+        else if (dto instanceof ChatMembersReq req) {
+            CompletableFuture.runAsync(() -> {
+                ChatMembersRes res = processChatMembersReq(req);
+                String jsonRes = null;
+                try {
+                    jsonRes = mapper.writeValueAsString(res);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+                ctx.channel().writeAndFlush(frame);
+            }, dbExecutor);
+        }
     }
 
     private void saveToDatabase(MessageDTO msg) {
@@ -368,6 +381,17 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         }
     }
 
+    private ChatMembersRes processChatMembersReq(ChatMembersReq req) {
+        DataSource ds = connection_manager.getDataSource();
+        ChatDao chatDao = new ChatDao(ds);
+        try{
+            List<String>  chatMembers = chatDao.findUsersInChat(req.getChatId());
+            return new ChatMembersRes(chatMembers, "success");
+        }
+        catch (SQLException e){
+            return new ChatMembersRes(null,  "Database failure: " + e.getMessage());
+        }
+    }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {

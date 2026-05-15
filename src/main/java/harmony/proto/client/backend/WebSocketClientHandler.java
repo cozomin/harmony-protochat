@@ -40,6 +40,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private volatile CompletableFuture<ChatRes> chatFuture;
     private volatile CompletableFuture<MessageRes> messageFuture;
     private volatile CompletableFuture<FriendRes> friendOpFuture;
+    private volatile CompletableFuture<ChatMembersRes> chatMembersFuture;
 
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
@@ -83,6 +84,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         messageFuture = new CompletableFuture<>();
     }
     public synchronized void prepareForFriendOp(){ friendOpFuture = new CompletableFuture<>(); }
+    public synchronized void prepareForChatMembers(){
+        chatMembersFuture = new CompletableFuture<>();
+    }
 
     public LoginRes awaitLoginResponse() throws Exception {
         return loginFuture.get(5, TimeUnit.SECONDS);
@@ -98,6 +102,10 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
     public FriendRes awaitFriendOpResponse() throws Exception{
         return friendOpFuture.get(5, TimeUnit.SECONDS);
+    }
+
+    public ChatMembersRes awaitChatMembersResponse() throws Exception{
+        return chatMembersFuture.get(5, TimeUnit.SECONDS);
     }
 
     @Override
@@ -178,13 +186,19 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                         liveGroupCreationListener.onNewGroupCreation(res);
                     }
                 }
+                else if (dto instanceof ChatMembersRes res){
+                    chatMembersFuture.complete(res);
+                }
 
             } catch (Exception e) {
                 System.err.println("JSON parsing Error: " + e.getMessage());
 
-                if (loginFuture != null && !loginFuture.isDone()) {
-                    loginFuture.completeExceptionally(e);
-                }
+                //Don't block the ui while waiting for response
+                if (loginFuture != null && !loginFuture.isDone()) loginFuture.completeExceptionally(e);
+                if (chatFuture != null && !chatFuture.isDone()) chatFuture.completeExceptionally(e);
+                if (messageFuture != null && !messageFuture.isDone()) messageFuture.completeExceptionally(e);
+                if (friendOpFuture != null && !friendOpFuture.isDone()) friendOpFuture.completeExceptionally(e);
+                if (chatMembersFuture != null && !chatMembersFuture.isDone()) chatMembersFuture.completeExceptionally(e);
             }
 
         } else if (frame instanceof PongWebSocketFrame) {
