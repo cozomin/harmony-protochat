@@ -103,6 +103,8 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
             //save to database on a different thread
             CompletableFuture.runAsync(() -> {
+                saveToDatabase(messageDTO);
+
                 Long chatId = messageDTO.getChatId();
 
                 List<String> participants = chatMembers.computeIfAbsent(chatId, id -> {
@@ -134,7 +136,6 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                     e.printStackTrace();
                 }
 
-                saveToDatabase(messageDTO);
             }, dbExecutor);
         }
 
@@ -236,6 +237,35 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                 }
                 TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
                 ctx.channel().writeAndFlush(frame);
+            }, dbExecutor);
+        }
+        else if (dto instanceof MessageEditReq req) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    DataSource ds = connection_manager.getDataSource();
+                    MessageDao dao = new MessageDao(ds);
+                    dao.editMessage(req.getMessId(), req.getNewContent());
+                    System.out.println("Broadcasting update for message ID: " + req.getMessId() + " action: edit");
+                    MessageUpdateRes updateEvent = new MessageUpdateRes(req.getMessId(), MessageUpdateAction.EDIT, req.getNewContent());
+                    broadcastMessageUpdate(req.getChatId(), updateEvent);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }, dbExecutor);
+        }
+        else if (dto instanceof MessageDeleteReq req) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    DataSource ds = connection_manager.getDataSource();
+                    MessageDao dao = new MessageDao(ds);
+                    dao.deleteMessage(req.getMessId());
+
+                    System.out.println("Broadcasting update for message ID: " + req.getMessId() + " action: delete");
+                    MessageUpdateRes updateEvent = new MessageUpdateRes(req.getMessId(), MessageUpdateAction.DELETE, null);
+                    broadcastMessageUpdate(req.getChatId(), updateEvent);
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
             }, dbExecutor);
         }
     }
@@ -390,6 +420,35 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         }
         catch (SQLException e){
             return new ChatMembersRes(null,  "Database failure: " + e.getMessage());
+        }
+    }
+
+    private void broadcastMessageUpdate(Long chatId, MessageUpdateRes event) {
+        List<String> participants = chatMembers.computeIfAbsent(chatId, id -> {
+            DataSource ds = connection_manager.getDataSource();
+            ChatDao chatDao = new ChatDao(ds);
+            try {
+                return chatDao.findUsersInChat(id);
+            } catch (SQLException e) {
+                e.printStackTrace();
+                return new ArrayList<>();
+            }
+        });
+
+        if (participants != null && !participants.isEmpty()) {
+            try {
+                String jsonEvent = mapper.writeValueAsString(event);
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonEvent);
+                for (String username : participants) {
+                    Channel userChannel = onlineUsers.get(username);
+                    if (userChannel != null && userChannel.isActive()) {
+                        userChannel.writeAndFlush(frame.retainedDuplicate());
+                    }
+                }
+                frame.release();
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
         }
     }
 

@@ -36,6 +36,7 @@ public final class WebSocketClient {
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
     private LiveMessageListener savedMessageListener;
     private LiveGroupCreationListener savedGroupCreationListener;
+    private LiveMessageUpdateListener savedMessageUpdateListener;
 
     private EventLoopGroup group;
     private Channel channel;
@@ -95,6 +96,10 @@ public final class WebSocketClient {
 
         if  (savedGroupCreationListener != null) {
             handler.setLiveGroupCreationListener(savedGroupCreationListener);
+        }
+
+        if (savedMessageUpdateListener != null) {
+            handler.setLiveMessageUpdateListener(savedMessageUpdateListener);
         }
 
         Bootstrap b = new Bootstrap();
@@ -239,6 +244,16 @@ public final class WebSocketClient {
         channel.writeAndFlush(new TextWebSocketFrame(json));
     }
 
+    public void editMessage(Long messId, Long chatId, String newContent) throws Exception {
+        MessageEditReq req = new MessageEditReq(messId, chatId, newContent);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+    }
+
+    public void deleteMessage(Long messId, Long chatId) throws Exception {
+        MessageDeleteReq req = new MessageDeleteReq(messId, chatId);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+    }
+
     public synchronized void disconnect() throws Exception {
         if (channel != null && channel.isActive()) {
             channel.writeAndFlush(new CloseWebSocketFrame()).sync();
@@ -281,6 +296,12 @@ public final class WebSocketClient {
         this.savedGroupCreationListener = listener;
         if (handler != null) {
             handler.setLiveGroupCreationListener(listener);
+        }
+    }
+    public void setLiveMessageUpdateListener(LiveMessageUpdateListener listener) {
+        this.savedMessageUpdateListener = listener;
+        if (handler != null) {
+            handler.setLiveMessageUpdateListener(listener);
         }
     }
 }

@@ -85,4 +85,23 @@ public class MessageDao {
         messageDTOS.sort((a, b) -> a.getSentAt().compareTo(b.getSentAt()));
         return messageDTOS;
     }
+
+    public void editMessage(Long messId, String newContent) throws SQLException {
+        String sql = "update hm_message set message_content = ? where messID = ?";
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, newContent);
+            ps.setLong(2, messId);
+            ps.executeUpdate();
+        }
+    }
+
+    public void deleteMessage(Long messId) throws SQLException {
+        String sql = "delete from hm_message where messID = ?";
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, messId);
+            ps.executeUpdate();
+        }
+    }
 }

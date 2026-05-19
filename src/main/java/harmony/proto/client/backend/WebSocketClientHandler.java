@@ -35,6 +35,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
     private volatile LiveMessageListener liveMessageListener;
     private volatile LiveGroupCreationListener liveGroupCreationListener;
+    private volatile LiveMessageUpdateListener liveMessageUpdateListener;
 
     private volatile CompletableFuture<LoginRes> loginFuture;
     private volatile CompletableFuture<ChatRes> chatFuture;
@@ -67,6 +68,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     }
     public void setLiveGroupCreationListener(LiveGroupCreationListener listener){
         this.liveGroupCreationListener = listener;
+    }
+    public void setLiveMessageUpdateListener(LiveMessageUpdateListener listener) {
+        this.liveMessageUpdateListener = listener;
     }
 
     public synchronized void prepareForLogin() {
@@ -188,6 +192,14 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                 }
                 else if (dto instanceof ChatMembersRes res){
                     chatMembersFuture.complete(res);
+                }
+                else if (dto instanceof MessageUpdateRes updateDTO) {
+//                    System.out.println("Client received update event for ID: " + updateDTO.getMessId());
+                    if (liveMessageUpdateListener != null) {
+                        liveMessageUpdateListener.onMessageUpdate(updateDTO);
+                    } else {
+                        System.out.println("WARNING: liveMessageUpdateListener is NULL!");
+                    }
                 }
 
             } catch (Exception e) {

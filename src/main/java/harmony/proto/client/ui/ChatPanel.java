@@ -1,6 +1,7 @@
 package harmony.proto.client.ui;
 
 import harmony.proto.dto.ChatDTO;
+import harmony.proto.dto.MessageDTO;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -21,7 +22,9 @@ public class ChatPanel extends JPanel {
         }
     };
 
-    private final JTextArea messagesArea = new JTextArea();
+    private final JPanel messagesContainer = new JPanel();
+    private JScrollPane scrollPane;
+
     private final JLabel headerLabel = new JLabel("Not connected");
 
     public ChatPanel() {
@@ -34,19 +37,24 @@ public class ChatPanel extends JPanel {
 
         JPanel bottomBar = new JPanel(new BorderLayout(2, 2));
 
-        headerLabel.setFont(headerLabel.getFont().deriveFont(Font.BOLD, 18f));
+        messagesContainer.setLayout(new BoxLayout(messagesContainer, BoxLayout.Y_AXIS));
 
-        messagesArea.setEditable(false);
-        messagesArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        messagesArea.setLineWrap(true);
-        messagesArea.setWrapStyleWord(true);
-        messagesArea.setText("Chat backend connected.\n\nMessage loading is not wired yet.");
+        JPanel scrollWrapper = new JPanel(new BorderLayout());
+        scrollWrapper.add(messagesContainer, BorderLayout.NORTH);
+
+        scrollPane = new JScrollPane(scrollWrapper);
+
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        headerLabel.setFont(headerLabel.getFont().deriveFont(Font.BOLD, 18f));
 
         bottomBar.add(txtMessage,  BorderLayout.CENTER);
         bottomBar.add(bSend,  BorderLayout.EAST);
 
         root.add(headerLabel, BorderLayout.NORTH);
-        root.add(new JScrollPane(messagesArea), BorderLayout.CENTER);
+        root.add(scrollPane, BorderLayout.CENTER);
         root.add(bottomBar, BorderLayout.SOUTH);
 
         this.setLayout(new BorderLayout());
@@ -71,25 +79,86 @@ public class ChatPanel extends JPanel {
 
         SwingUtilities.invokeLater(() -> {
             headerLabel.setText("Welcome " + username);
-            messagesArea.setText(
-                    "Connection status: " + (connected ? "connected" : "disconnected") + "\n" +
-                            "Logged in as: " + username + "\n" +
-                            "The UI is now connected to the websocket client backend."
-            );
+//            messagesArea.setText(
+//                    "Connection status: " + (connected ? "connected" : "disconnected") + "\n" +
+//                            "Logged in as: " + username + "\n" +
+//                            "The UI is now connected to the websocket client backend."
+//            );
         });
 
     }
 
-    public void showMessage(String message) {
-        messagesArea.append(message);
+    public void showMessage(MessageDTO message, boolean isOwnMessage) {
+        SwingUtilities.invokeLater(() -> {
+            JScrollBar vertical = scrollPane.getVerticalScrollBar();
+            boolean isAtBottom = (vertical.getValue() + vertical.getVisibleAmount() + 10) >= vertical.getMaximum();
+
+            MessagePanel bubble = new MessagePanel(message, isOwnMessage);
+
+            JPanel alignWrapper = new JPanel(new FlowLayout(isOwnMessage ? FlowLayout.RIGHT : FlowLayout.LEFT, 0, 0));
+            alignWrapper.setOpaque(false);
+            alignWrapper.add(bubble);
+
+            messagesContainer.add(alignWrapper);
+            messagesContainer.add(Box.createVerticalStrut(6));
+
+            messagesContainer.revalidate();
+            messagesContainer.repaint();
+
+            if (isAtBottom || isOwnMessage) {
+                SwingUtilities.invokeLater(() -> {
+                    vertical.setValue(vertical.getMaximum());
+                });
+            }
+        });
     }
 
+    public void removeMessage(MessagePanel messagePanel) {
+        SwingUtilities.invokeLater(() -> {
+            Container wrapper = messagePanel.getParent();
+            if (wrapper != null) {
+                messagesContainer.remove(wrapper);
+                messagesContainer.revalidate();
+                messagesContainer.repaint();
+            }
+        });
+    }
+
+    public MessagePanel findMessagePanelById(Long messId) {
+        if (messId == null) {
+            return null;
+        }
+        for (Component comp : messagesContainer.getComponents()) {
+            if (comp instanceof JPanel alignWrapper) {
+                for (Component inner : alignWrapper.getComponents()) {
+                    if (inner instanceof MessagePanel mp) {
+                        Long panelMsgId = mp.getMessageId();
+                        if (panelMsgId != null && panelMsgId.equals(messId)) {
+                            return mp;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+//    public void scrollToBottom() {
+//        SwingUtilities.invokeLater(() -> {
+//            messagesContainer.
+//        })
+//    }
+
     public void prepareLoadChats() {
-        messagesArea.setText("");
+        prepareLoadMessages();
     }
 
     public void prepareLoadMessages() {
-        messagesArea.setText("");
+        SwingUtilities.invokeLater(() -> {
+            messagesContainer.removeAll();
+            messagesContainer.revalidate();
+            messagesContainer.repaint();
+        });
     }
 
     public void clearTxtMessages() {

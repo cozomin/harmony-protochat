@@ -2,8 +2,10 @@ package harmony.proto.client.presenter;
 
 import harmony.proto.client.backend.WebSocketClient;
 import harmony.proto.client.ui.ChatPanel;
+import harmony.proto.client.ui.MessagePanel;
 import harmony.proto.dto.ChatDTO;
 import harmony.proto.dto.MessageDTO;
+import harmony.proto.dto.res.MessageUpdateAction;
 
 import javax.swing.*;
 import java.time.ZoneId;
@@ -35,7 +37,6 @@ public class ChatPresenter {
             SwingUtilities.invokeLater(() -> {
                 // Check if the incoming message belongs to the currently open chat
                 activeChat = inboxPresenter.getActiveChat();
-//                System.out.println(activeChat.getChatName());
 
                 if (activeChat != null && activeChat.getChatID().equals(message.getChatId())) {
                     String time = message.getSentAt() == null ? "Now" : timeFormatter.format(message.getSentAt());
@@ -44,14 +45,37 @@ public class ChatPresenter {
                             + message.getContent()
                             + "\n";
 
-                    chatView.showMessage(shownMessage);
-//                    System.out.println(message.getContent());
+                    boolean isMine = message.getSenderId().equals(client.getCurrentUsername());
+                    chatView.showMessage(message, isMine);
+
+                    attachMessageActions(message, isMine);
                 }
                 else {
                     // In app notification goes here
                 }
             });
         });
+
+        try {
+            client.setLiveMessageUpdateListener(updateEvent -> {
+//                System.out.println("Presenter processing update for ID: " + updateEvent.getMessId());
+                SwingUtilities.invokeLater(() -> {
+                    MessagePanel mp = chatView.findMessagePanelById(updateEvent.getMessId());
+                    if (mp != null) {
+//                        System.out.println("MessagePanel FOUND! Applying update.");
+                        if (updateEvent.getAction() == MessageUpdateAction.EDIT) {
+                            mp.updateText(updateEvent.getNewContent());
+                        } else if (updateEvent.getAction() == MessageUpdateAction.DELETE) {
+                            chatView.removeMessage(mp);
+                        }
+                    } else {
+                        System.out.println("MessagePanel NOT FOUND for ID: " + updateEvent.getMessId());
+                    }
+                });
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void loadSessionInfo() {
@@ -70,7 +94,7 @@ public class ChatPresenter {
         SwingWorker<List<MessageDTO>, Void> worker = new SwingWorker<>() {
             @Override
             protected List<MessageDTO> doInBackground() throws Exception {
-                 return client.fetchMessages(chat.getChatID());
+                return client.fetchMessages(chat.getChatID());
             }
 
             @Override
@@ -78,20 +102,26 @@ public class ChatPresenter {
                 try {
                     List<MessageDTO> messages = get();
                     chatView.prepareLoadMessages();
+
                     for(MessageDTO message : messages){
                         String time = message.getSentAt() == null ? "?" : timeFormatter.format(message.getSentAt());
                         String shownMessage = "[" + time + "] "
                                 + message.getSenderId() + ": "
                                 + message.getContent()
                                 + "\n";
-                        chatView.showMessage(shownMessage);
+                        boolean isMine = message.getSenderId().equals(client.getCurrentUsername());
+                        chatView.showMessage(message, isMine);
+
+                        attachMessageActions(message, isMine);
                     }
 
                     if (messages.isEmpty()){
-                        chatView.showMessage("No messages\n");
+                        MessageDTO message = new MessageDTO();
+                        message.setContent("No messages found");
+                        chatView.showMessage(message, false);
                     }
                 } catch(Exception e){
-                    chatView.showMessage(e.getMessage());
+//                    chatView.showMessage(e.getMessage());
                 }
             }
         };
@@ -117,7 +147,43 @@ public class ChatPresenter {
         }
         catch (Exception e) {
             chatView.setSendEnabled(true);
-            chatView.showMessage(e.getMessage());
+//            chatView.showMessage(e.getMessage());
         }
+    }
+
+    private void attachMessageActions(MessageDTO message, boolean isMine) {
+        if (!isMine) return;
+
+        SwingUtilities.invokeLater(() -> {
+            MessagePanel mp = chatView.findMessagePanelById(message.getMessId());
+            if (mp != null) {
+                mp.setEditAction(e -> {
+                    String newContent = JOptionPane.showInputDialog(chatView, "Edit message:", message.getContent());
+                    if (newContent != null && !newContent.trim().isEmpty() && !newContent.equals(message.getContent())) {
+                        try {
+                            client.editMessage(message.getMessId(), message.getChatId(), newContent);
+                            message.setContent(newContent);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                });
+
+                mp.setDeleteAction(e -> {
+                    int confirm = JOptionPane.showConfirmDialog(chatView,
+                            "Are you sure you want to delete this message?",
+                            "Confirm Delete",
+                            JOptionPane.YES_NO_OPTION);
+
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        try {
+                            client.deleteMessage(message.getMessId(), message.getChatId());
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                });
+            }
+        });
     }
 }
