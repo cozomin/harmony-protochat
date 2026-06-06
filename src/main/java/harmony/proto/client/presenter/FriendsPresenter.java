@@ -8,7 +8,10 @@ import harmony.proto.dto.res.FriendRes;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
+
+import static javax.swing.JOptionPane.QUESTION_MESSAGE;
 
 public class FriendsPresenter {
     private final FriendsPanel friendsView;
@@ -50,18 +53,52 @@ public class FriendsPresenter {
     private void bindAllFriendsActions() {
         AllFriendsPanel allView = friendsView.getAllFriendsPanel();
 
+        allView.createGroupButtonAction(e -> {
+            List<UserDTO> selectedUsers = allView.getFriendsList().getSelectedValuesList();
+
+            if (selectedUsers != null && !selectedUsers.isEmpty()) {
+                String groupName = JOptionPane.showInputDialog(friendsView, "Enter Group Name:");
+
+                if (groupName != null && !groupName.trim().isEmpty()) {
+                    List<String> stringUsers = new ArrayList<>();
+                    for (UserDTO user : selectedUsers) {
+                        stringUsers.add(user.getUsername());
+                    }
+
+                    SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                        @Override
+                        protected Void doInBackground() throws Exception {
+                            client.createGroup(groupName.trim(), stringUsers);
+                            return null;
+                        }
+
+                        @Override
+                        protected void done() {
+
+                            inboxPresenter.loadChats();
+                            allView.getFriendsList().clearSelection();
+                        }
+                    };
+                    worker.execute();
+                }
+            }
+        });
+
         allView.removeButtonAction(e -> {
-            UserDTO selectedUser = allView.getFriendsList().getSelectedValue();
-            if (selectedUser != null) {
-                processFriend(FriendOperation.deny, selectedUser);
+            List<UserDTO> selectedUsers = allView.getFriendsList().getSelectedValuesList();
+            if (selectedUsers != null) {
+                for (UserDTO user : selectedUsers)
+                    processFriend(FriendOperation.deny, user);
             }
             refreshAllLists();
         });
 
         allView.messageButtonAction(e -> {
-            UserDTO selectedUser = allView.getFriendsList().getSelectedValue();
-            if (selectedUser != null) {
-                inboxPresenter.openDirectMessage(selectedUser.getUsername());
+            if(allView.getFriendsList().getSelectedIndices().length == 1) {
+                UserDTO selectedUser = allView.getFriendsList().getSelectedValue();
+                if (selectedUser != null) {
+                    inboxPresenter.openDirectMessage(selectedUser.getUsername());
+                }
             }
         });
     }

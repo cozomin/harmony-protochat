@@ -25,7 +25,16 @@ import harmony.proto.dto.res.*;
         @JsonSubTypes.Type(value = BaseRes.class, name = "BaseRes"),
         @JsonSubTypes.Type(value = SignUpReq.class, name = "SignUpReq"),
         @JsonSubTypes.Type(value = FriendReq.class, name = "FriendReq"),
-        @JsonSubTypes.Type(value = FriendRes.class, name = "FriendRes")
+        @JsonSubTypes.Type(value = FriendRes.class, name = "FriendRes"),
+        @JsonSubTypes.Type(value = GroupCreationReq.class, name = "GroupCreationReq"),
+        @JsonSubTypes.Type(value = GroupCreationRes.class, name = "GroupCreationRes"),
+        @JsonSubTypes.Type(value = ChatMembersReq.class, name = "ChatMembersReq"),
+        @JsonSubTypes.Type(value = ChatMembersRes.class, name = "ChatMembersRes"),
+        @JsonSubTypes.Type(value = MessageEditReq.class, name = "MessageEditReq"),
+        @JsonSubTypes.Type(value = MessageDeleteReq.class, name = "MessageDeleteReq"),
+        @JsonSubTypes.Type(value = MessageUpdateRes.class, name = "MessageUpdateRes"),
+        @JsonSubTypes.Type(value = AIPolishReq.class, name = "AIPolishReq"),
+        @JsonSubTypes.Type(value = AIPolishRes.class, name = "AIPolishRes")
 })
 
 public abstract class BaseDTO {

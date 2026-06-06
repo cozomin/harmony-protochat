@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import harmony.proto.dto.*;
 import harmony.proto.dto.req.*;
-import harmony.proto.dto.res.ChatRes;
-import harmony.proto.dto.res.FriendRes;
-import harmony.proto.dto.res.LoginRes;
-import harmony.proto.dto.res.MessageRes;
+import harmony.proto.dto.res.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -37,7 +34,9 @@ public final class WebSocketClient {
     static final int MAX_CONTENT_LENGTH = 8192;
 
     private final ObjectMapper mapper = new ObjectMapper().registerModule(new JavaTimeModule());
-    private LiveMessageListener savedListener;
+    private LiveMessageListener savedMessageListener;
+    private LiveGroupCreationListener savedGroupCreationListener;
+    private LiveMessageUpdateListener savedMessageUpdateListener;
 
     private EventLoopGroup group;
     private Channel channel;
@@ -91,8 +90,16 @@ public final class WebSocketClient {
                 )
         );
 
-        if (savedListener != null) {
-            handler.setLiveMessageListener(savedListener);
+        if (savedMessageListener != null) {
+            handler.setLiveMessageListener(savedMessageListener);
+        }
+
+        if  (savedGroupCreationListener != null) {
+            handler.setLiveGroupCreationListener(savedGroupCreationListener);
+        }
+
+        if (savedMessageUpdateListener != null) {
+            handler.setLiveMessageUpdateListener(savedMessageUpdateListener);
         }
 
         Bootstrap b = new Bootstrap();
@@ -150,7 +157,7 @@ public final class WebSocketClient {
         else return false;
     }
 
-    public boolean fetchChats() throws Exception {
+    public synchronized boolean fetchChats() throws Exception {
         handler.prepareForChats();
         String username = handler.getCurrentUsername();
         ChatReq chatReq = new ChatReq(username);
@@ -165,7 +172,7 @@ public final class WebSocketClient {
         else return false;
     }
 
-    public FriendRes friendOperation(FriendOperation operation, String user2) throws Exception{
+    public synchronized FriendRes friendOperation(FriendOperation operation, String user2) throws Exception{
         //OBS! user2 can be null, depending on the operation. User2 would be taken from a text box
         handler.prepareForFriendOp();
         String user1 = handler.getCurrentUsername();
@@ -179,7 +186,7 @@ public final class WebSocketClient {
 
     }
 
-    public List<MessageDTO> fetchMessages(Long chatID) throws Exception {
+    public synchronized List<MessageDTO> fetchMessages(Long chatID) throws Exception {
         handler.prepareForMessages();
         String username = handler.getCurrentUsername();
         MessageReq req = new MessageReq(chatID);
@@ -197,6 +204,20 @@ public final class WebSocketClient {
 
     }
 
+    public synchronized List<String> fetchChatMembers(Long chatID) throws Exception {
+        handler.prepareForChatMembers();
+        ChatMembersReq req = new ChatMembersReq(chatID);
+        String json = mapper.writeValueAsString(req);
+        channel.writeAndFlush(new TextWebSocketFrame(json));
+
+        ChatMembersRes res = handler.awaitChatMembersResponse();
+        if(res.isSuccess() && res.getChatMembers() != null){
+            return res.getChatMembers();
+        }
+
+        return new java.util.ArrayList<>();
+    }
+
     public void sendMessage(String input, Long chatID) throws Exception {
         MessageDTO messageDTO = new MessageDTO();
         messageDTO.setContent(input);
@@ -207,10 +228,44 @@ public final class WebSocketClient {
 
         //Converts Message to JSON for transport
         String jsonMsg = mapper.writeValueAsString(messageDTO);
+        System.out.println(jsonMsg);
 
         //Sends the json through a TextWebSocketFrame
         WebSocketFrame frame = new TextWebSocketFrame(jsonMsg);
         channel.writeAndFlush(frame);
+    }
+
+    public void createGroup(String groupName, List<String> members) throws Exception {
+        GroupCreationReq groupCreationReq = new GroupCreationReq();
+        groupCreationReq.setName(groupName);
+        groupCreationReq.setCreator(username);
+        groupCreationReq.setMembers(members);
+
+        String json = mapper.writeValueAsString(groupCreationReq);
+        channel.writeAndFlush(new TextWebSocketFrame(json));
+    }
+
+    public void editMessage(Long messId, Long chatId, String newContent) throws Exception {
+        MessageEditReq req = new MessageEditReq(messId, chatId, newContent);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+    }
+
+    public void deleteMessage(Long messId, Long chatId) throws Exception {
+        MessageDeleteReq req = new MessageDeleteReq(messId, chatId);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+    }
+
+    public synchronized String polishMessageText(String originalText) throws Exception {
+        handler.prepareForAIPolish();
+        AIPolishReq req = new AIPolishReq(originalText);
+        String json = mapper.writeValueAsString(req);
+        channel.writeAndFlush(new TextWebSocketFrame(json));
+
+        AIPolishRes res = handler.awaitAIPolishResponse();
+        if ("success".equals(res.getMessage()) && res.getPolishedText() != null) {
+            return res.getPolishedText();
+        }
+        return originalText;
     }
 
     public synchronized void disconnect() throws Exception {
@@ -245,9 +300,22 @@ public final class WebSocketClient {
     }
 
     public void setLiveMessageListener(LiveMessageListener listener) {
-        this.savedListener = listener;
+        this.savedMessageListener = listener;
         if (handler != null) {
             handler.setLiveMessageListener(listener);
+        }
+    }
+
+    public void setLiveGroupCreationListener(LiveGroupCreationListener listener) {
+        this.savedGroupCreationListener = listener;
+        if (handler != null) {
+            handler.setLiveGroupCreationListener(listener);
+        }
+    }
+    public void setLiveMessageUpdateListener(LiveMessageUpdateListener listener) {
+        this.savedMessageUpdateListener = listener;
+        if (handler != null) {
+            handler.setLiveMessageUpdateListener(listener);
         }
     }
 }
