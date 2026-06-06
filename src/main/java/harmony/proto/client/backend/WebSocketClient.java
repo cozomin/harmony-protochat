@@ -228,6 +228,7 @@ public final class WebSocketClient {
 
         //Converts Message to JSON for transport
         String jsonMsg = mapper.writeValueAsString(messageDTO);
+        System.out.println(jsonMsg);
 
         //Sends the json through a TextWebSocketFrame
         WebSocketFrame frame = new TextWebSocketFrame(jsonMsg);
@@ -252,6 +253,19 @@ public final class WebSocketClient {
     public void deleteMessage(Long messId, Long chatId) throws Exception {
         MessageDeleteReq req = new MessageDeleteReq(messId, chatId);
         channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+    }
+
+    public synchronized String polishMessageText(String originalText) throws Exception {
+        handler.prepareForAIPolish();
+        AIPolishReq req = new AIPolishReq(originalText);
+        String json = mapper.writeValueAsString(req);
+        channel.writeAndFlush(new TextWebSocketFrame(json));
+
+        AIPolishRes res = handler.awaitAIPolishResponse();
+        if ("success".equals(res.getMessage()) && res.getPolishedText() != null) {
+            return res.getPolishedText();
+        }
+        return originalText;
     }
 
     public synchronized void disconnect() throws Exception {

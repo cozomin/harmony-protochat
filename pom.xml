@@ -76,8 +76,14 @@
             <artifactId>miglayout</artifactId>
             <version>3.7.4</version>
         </dependency>
-    </dependencies>
 
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-ollama</artifactId>
+            <version>1.0.0-beta1</version>
+        </dependency>
+
+    </dependencies>
 
 
 </project>
