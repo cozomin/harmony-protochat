@@ -1,6 +1,7 @@
 package harmony.proto.dao;
 
 import harmony.proto.dto.UserDTO;
+import org.mindrot.jbcrypt.BCrypt;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -31,14 +32,19 @@ public class UserDao {
 
     public String login(String username, String pass) throws SQLException{
         //checks if userID has inserted correct password
-        String sql = "select username from hm_user where username = ? and pass = ?";
+        String sql = "select pass from hm_user where username = ?";
         try(Connection con = dataSource.getConnection();
             PreparedStatement ps = con.prepareStatement(sql);){
             ps.setString(1, username);
-            ps.setString(2, pass);
+//            ps.setString(2, pass);
             try(ResultSet rs = ps.executeQuery()){
-                if(rs.next())
-                    return username;
+
+                if(rs.next()) {
+//                    System.out.println(rs.getString("pass"));
+                    if (BCrypt.checkpw(pass, rs.getString(1)))
+                        return username;
+                    else return null;
+                }
                 else
                     return null;
             }

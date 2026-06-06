@@ -18,8 +18,13 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.netty.handler.timeout.IdleStateEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.netty.util.AttributeKey;
+import org.mindrot.jbcrypt.BCrypt;
 
 import javax.sql.DataSource;
+import java.security.MessageDigest;
+import java.sql.Connection;
+
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +51,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
     private static final Map<String, Channel> onlineUsers = new ConcurrentHashMap<String, Channel>();
     private static final Map<Long, List<String>> chatMembers = new ConcurrentHashMap<>();
+    public static final AttributeKey<String> usernameKEY = AttributeKey.valueOf("username");
 
     private static final ExecutorService dbExecutor = Executors.newFixedThreadPool(20);
     private static final ObjectMapper mapper = new ObjectMapper()
@@ -85,8 +91,11 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 //        Message systemMsg = new Message();
 //        systemMsg.setContent("[SERVER] - " + incoming.remoteAddress() + " has left");
 //        systemMsg.setMessageType("SYSTEM");
-
-        onlineUsers.values().remove(ctx.channel());
+        String sessionUser = ctx.channel().attr(usernameKEY).get();
+        if (sessionUser != null) {
+            onlineUsers.remove(sessionUser, ctx.channel());
+            System.out.println("User " + sessionUser + " has disconnected.");
+        }
 
 //        try {
 //            channels.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(systemMsg)));
@@ -109,8 +118,46 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         String json = msg.text();
         BaseDTO dto = mapper.readValue(json, BaseDTO.class);
 
+        String sessionUser = ctx.channel().attr(usernameKEY).get();
+
+        if(dto instanceof SignUpReq req){
+            CompletableFuture.runAsync(() -> {
+                LoginRes res = processSignUpReq(req, ctx);
+                String jsonRes = null;
+                try {
+                    jsonRes = mapper.writeValueAsString(res);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+                ctx.channel().writeAndFlush(frame);
+            }, dbExecutor);
+            return;
+        }
+        else if (dto instanceof LoginReq login) {
+            CompletableFuture.runAsync(() -> {
+                LoginRes res = processLoginReq(login, ctx);
+                String jsonRes = null;
+                try {
+                    jsonRes = mapper.writeValueAsString(res);
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
+                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
+                ctx.channel().writeAndFlush(frame);
+            }, dbExecutor);
+            return;
+        }
+
+        if (sessionUser == null) {
+            System.err.println("Unauthorized request blocked from: " + ctx.channel().remoteAddress());
+            //Error DTO here
+            return;
+        }
+
         if (dto instanceof MessageDTO messageDTO) {
             String messageText = messageDTO.getContent(); // Client message
+            messageDTO.setSenderId(sessionUser);
 
             if (messageText == null || messageText.isEmpty()) {
                 return;
@@ -153,7 +200,6 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
             }, dbExecutor);
         }
-
         else if (dto instanceof MessageReq req){
             CompletableFuture.runAsync(() -> {
                 MessageRes res = processMessageReq(req);
@@ -167,33 +213,8 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                 ctx.channel().writeAndFlush(frame);
             }, dbExecutor);
         }
-        else if(dto instanceof SignUpReq req){
-            CompletableFuture.runAsync(() -> {
-                LoginRes res = processSignUpReq(req);
-                String jsonRes = null;
-                try {
-                    jsonRes = mapper.writeValueAsString(res);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
-                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
-                ctx.channel().writeAndFlush(frame);
-            }, dbExecutor);
-        }
-        else if (dto instanceof LoginReq login) {
-            CompletableFuture.runAsync(() -> {
-                LoginRes res = processLoginReq(login, ctx);
-                String jsonRes = null;
-                try {
-                    jsonRes = mapper.writeValueAsString(res);
-                } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
-                }
-                TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
-                ctx.channel().writeAndFlush(frame);
-            }, dbExecutor);
-        }
         else if(dto instanceof ChatReq req){
+            req.setUsername(sessionUser);
             CompletableFuture.runAsync(() -> {
                 ChatRes res = processChatReq(req);
                 String jsonRes = null;
@@ -207,6 +228,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             }, dbExecutor);
         }
         else if(dto instanceof FriendReq req){
+            req.setUser1(sessionUser);
             CompletableFuture.runAsync(() -> {
                 FriendRes res = processFriendReq(req);
                 String jsonRes = null;
@@ -392,6 +414,15 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             if(username == null) {
                 return new LoginRes("Wrong password!", null);
             }
+            ctx.channel().attr(usernameKEY).set(username);
+
+            Channel oldChannel = onlineUsers.get(username);
+            if (oldChannel != null && oldChannel.isActive()) {
+                System.out.println("Forcefully disconnecting previous session for: " + username);
+                //Error DTO for the other device (or instance) that got kicked out
+                oldChannel.close();
+            }
+
             onlineUsers.put(username, ctx.channel());
             return new LoginRes("success", username);
 
@@ -400,7 +431,12 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         }
     }
 
-    private LoginRes processSignUpReq(LoginReq req) {
+    private String passwordHasher(String password){
+        // log_round determines the complexity of the hashing
+        return BCrypt.hashpw(password, BCrypt.gensalt(12));
+    }
+
+    private LoginRes processSignUpReq(LoginReq req, ChannelHandlerContext ctx) {
         DataSource ds = connection_manager.getDataSource();
         UserDao userDao = new UserDao(ds);
 
@@ -408,7 +444,12 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             if (userDao.existsByUsername(req.getUsername())) {
                 return new LoginRes("Username already exists!", null);
             }
-            String username = userDao.signUp(req.getUsername(), req.getPassword());
+
+            String passHashed = passwordHasher(req.getPassword());
+
+            String username = userDao.signUp(req.getUsername(), passHashed);
+
+            ctx.channel().attr(usernameKEY).set(username);
             return new LoginRes("success", username);
 
         } catch (SQLException e) {
