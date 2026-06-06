@@ -33,6 +33,38 @@ public class ChatPresenter {
 
         chatView.setSendMessageAction(e -> sendMessage());
 
+        chatView.setPolishAction(e -> {
+            String currentText = chatView.getTxtMessage();
+
+            if (currentText == null || currentText.trim().length() < 3) return;
+
+            chatView.setSendEnabled(false);
+            chatView.setPolishEnabled(false);
+            chatView.updateTxtMessage("AI is thinking...");
+
+            SwingWorker<String, Void> worker = new SwingWorker<>() {
+                @Override
+                protected String doInBackground() throws Exception {
+                    return client.polishMessageText(currentText);
+                }
+
+                @Override
+                protected void done() {
+                    try {
+                        String polishedText = get();
+                        chatView.updateTxtMessage(polishedText);
+                    } catch (Exception ex) {
+                        chatView.updateTxtMessage(currentText);
+                        ex.printStackTrace();
+                    } finally {
+                        chatView.setSendEnabled(true);
+                        chatView.setPolishEnabled(true);
+                    }
+                }
+            };
+            worker.execute();
+        });
+
         client.setLiveMessageListener(message -> {
             SwingUtilities.invokeLater(() -> {
                 // Check if the incoming message belongs to the currently open chat

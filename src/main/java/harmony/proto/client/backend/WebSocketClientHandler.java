@@ -42,6 +42,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private volatile CompletableFuture<MessageRes> messageFuture;
     private volatile CompletableFuture<FriendRes> friendOpFuture;
     private volatile CompletableFuture<ChatMembersRes> chatMembersFuture;
+    private volatile CompletableFuture<AIPolishRes> aiPolishFuture;
 
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
@@ -83,13 +84,15 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     public synchronized void prepareForChats(){
         chatFuture = new CompletableFuture<>();
     }
-
     public synchronized void prepareForMessages() {
         messageFuture = new CompletableFuture<>();
     }
     public synchronized void prepareForFriendOp(){ friendOpFuture = new CompletableFuture<>(); }
     public synchronized void prepareForChatMembers(){
         chatMembersFuture = new CompletableFuture<>();
+    }
+    public synchronized void prepareForAIPolish() {
+        aiPolishFuture = new CompletableFuture<>();
     }
 
     public LoginRes awaitLoginResponse() throws Exception {
@@ -110,6 +113,10 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
     public ChatMembersRes awaitChatMembersResponse() throws Exception{
         return chatMembersFuture.get(5, TimeUnit.SECONDS);
+    }
+
+    public AIPolishRes awaitAIPolishResponse() throws Exception {
+        return aiPolishFuture.get(10, TimeUnit.SECONDS);
     }
 
     @Override
@@ -200,6 +207,10 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                     } else {
                         System.out.println("WARNING: liveMessageUpdateListener is NULL!");
                     }
+                }
+                else if (dto instanceof AIPolishRes res) {
+                    if (aiPolishFuture != null)
+                        aiPolishFuture.complete(res);
                 }
 
             } catch (Exception e) {

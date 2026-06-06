@@ -8,6 +8,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionListener;
+import java.net.URL;
 import java.util.List;
 
 public class ChatPanel extends JPanel {
@@ -22,6 +23,9 @@ public class ChatPanel extends JPanel {
         }
     };
 
+    URL imgUrl = getClass().getResource("/img/icons/ai.png");
+    JButton bPolish;
+
     private final JPanel messagesContainer = new JPanel();
     private JScrollPane scrollPane;
 
@@ -32,6 +36,17 @@ public class ChatPanel extends JPanel {
     }
 
     private void init() {
+        if (imgUrl != null) {
+            ImageIcon originalIcon = new ImageIcon(imgUrl);
+
+            Image scaledImage = originalIcon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+
+            bPolish = new JButton(new ImageIcon(scaledImage));
+        }
+        else {
+            bPolish = new JButton("\u2728");
+        }
+
         root.setLayout(new BorderLayout(12, 12));
         root.setBorder(new EmptyBorder(12, 12, 12, 12));
 
@@ -50,8 +65,13 @@ public class ChatPanel extends JPanel {
 
         headerLabel.setFont(headerLabel.getFont().deriveFont(Font.BOLD, 18f));
 
-        bottomBar.add(txtMessage,  BorderLayout.CENTER);
-        bottomBar.add(bSend,  BorderLayout.EAST);
+        bottomBar.add(txtMessage, BorderLayout.CENTER);
+        JPanel actionButtons = new JPanel(new GridLayout(1, 2, 5, 0));
+        actionButtons.add(bPolish);
+        actionButtons.add(bSend);
+        bottomBar.add(actionButtons, BorderLayout.EAST);
+
+        bPolish.setToolTipText("Rewrite with AI");
 
         root.add(headerLabel, BorderLayout.NORTH);
         root.add(scrollPane, BorderLayout.CENTER);
@@ -73,6 +93,18 @@ public class ChatPanel extends JPanel {
 
     public void setSendEnabled(boolean enabled) {
         SwingUtilities.invokeLater(() -> bSend.setEnabled(enabled));
+    }
+
+    public void setPolishAction(ActionListener actionListener) {
+        bPolish.addActionListener(actionListener);
+    }
+
+    public void setPolishEnabled(boolean enabled) {
+        SwingUtilities.invokeLater(() -> bPolish.setEnabled(enabled));
+    }
+
+    public void updateTxtMessage(String text) {
+        SwingUtilities.invokeLater(() -> txtMessage.setText(text));
     }
 
     public void showSession(String username, List<ChatDTO> chats, boolean connected) {
