@@ -132,4 +132,32 @@ create table hm_message(
 
 insert into hm_message values (default, 'linktronus', 1, 'salut', (SELECT NOW()::TIMESTAMPTZ AS current_time) );
 
+CREATE TABLE hm_topics (
+    topicID bigserial PRIMARY KEY,
+    name varchar(100) UNIQUE NOT NULL,
+    is_official boolean DEFAULT false  -- TRUE = Server topic, FALSE = User-created custom topic
+);
 
+
+INSERT INTO hm_topics (name, is_official) VALUES
+('Programming', true),
+('Networking', true),
+('Gaming', true),
+('Cybersecurity', true),
+('History', true);
+
+CREATE TABLE user_topic (
+    userID varchar(64),
+    topicID bigint,
+    CONSTRAINT fk_ut_user FOREIGN KEY (userID) REFERENCES hm_user(username) ON DELETE CASCADE,
+    CONSTRAINT fk_ut_topic FOREIGN KEY (topicID) REFERENCES hm_topics(topicID) ON DELETE CASCADE,
+    CONSTRAINT pk_user_topic PRIMARY KEY (userID, topicID)
+);
+
+CREATE TABLE chat_topic (
+    chatID bigint,
+    topicID bigint,
+    CONSTRAINT fk_ct_chat FOREIGN KEY (chatID) REFERENCES chat(chatID) ON DELETE CASCADE,
+    CONSTRAINT fk_ct_topic FOREIGN KEY (topicID) REFERENCES hm_topics(topicID) ON DELETE CASCADE,
+    CONSTRAINT pk_chat_topic PRIMARY KEY (chatID, topicID)
+);

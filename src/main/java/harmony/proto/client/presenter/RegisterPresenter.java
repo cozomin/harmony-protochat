@@ -2,7 +2,6 @@ package harmony.proto.client.presenter;
 
 import harmony.proto.client.PaneSelector;
 import harmony.proto.client.backend.WebSocketClient;
-import harmony.proto.client.ui.LoginPanel;
 import harmony.proto.client.ui.RegisterPanel;
 
 import javax.swing.*;
@@ -66,7 +65,7 @@ public class RegisterPresenter {
                 if (success) {
                     registerView.clearError();
                     try {
-                        coordinator.onLoginSuccess();
+                        coordinator.onInterestShow();
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

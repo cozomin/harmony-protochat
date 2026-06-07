@@ -34,7 +34,9 @@ import harmony.proto.dto.res.*;
         @JsonSubTypes.Type(value = MessageDeleteReq.class, name = "MessageDeleteReq"),
         @JsonSubTypes.Type(value = MessageUpdateRes.class, name = "MessageUpdateRes"),
         @JsonSubTypes.Type(value = AIPolishReq.class, name = "AIPolishReq"),
-        @JsonSubTypes.Type(value = AIPolishRes.class, name = "AIPolishRes")
+        @JsonSubTypes.Type(value = AIPolishRes.class, name = "AIPolishRes"),
+        @JsonSubTypes.Type(value = InterestsReq.class, name = "InterestsReq"),
+        @JsonSubTypes.Type(value = InterestsRes.class, name = "InterestsRes")
 })
 
 public abstract class BaseDTO {

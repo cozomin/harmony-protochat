@@ -77,6 +77,14 @@ public class InboxPresenter {
             loadChatMembers();
         });
 
+        inboxView.setInterestsButtonAction( e -> {
+            try {
+                coordinator.onInterestShow();
+            } catch (Exception ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+
         client.setLiveGroupCreationListener( groupCreation -> {
             loadChats();
         });
