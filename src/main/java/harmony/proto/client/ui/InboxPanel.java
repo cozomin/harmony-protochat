@@ -22,6 +22,7 @@ public class InboxPanel extends JPanel {
 
 //    private final JPanel root = new JPanel(new BorderLayout(12, 12));
 
+    private final JButton interestsButton = new JButton("Interests");
     private final JButton loadButton = new JButton("Refresh");
     private final JButton logoutButton = new JButton("Logout");
     private final JButton friendsButton = new JButton("Friends");
@@ -62,6 +63,7 @@ public class InboxPanel extends JPanel {
 //        userIdField.setEditable(false);
 //        topBar.add(userIdField);
         topBar.add(friendsButton);
+        topBar.add(interestsButton);
         topBar.add(Box.createHorizontalGlue());
         topBar.add(loadButton);
         topBar.add(logoutButton);
@@ -224,6 +226,10 @@ public class InboxPanel extends JPanel {
 
     public void setFriendsButtonAction(ActionListener actionListener) {
         friendsButton.addActionListener(actionListener);
+    }
+
+    public void setInterestsButtonAction(ActionListener actionListener) {
+        interestsButton.addActionListener(actionListener);
     }
 
     public void setLogoutAction(ActionListener actionListener) {

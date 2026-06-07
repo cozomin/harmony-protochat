@@ -3,7 +3,6 @@ package harmony.proto.client.presenter;
 import harmony.proto.client.PaneSelector;
 import harmony.proto.client.backend.WebSocketClient;
 import harmony.proto.client.ui.ClientUI;
-import harmony.proto.client.ui.friends.FriendsPaneSelector;
 import harmony.proto.dto.req.FriendOperation;
 
 // This presenter acts as a coordinator for the specific ones
@@ -15,6 +14,8 @@ public class ClientPresenter {
     private final LoginPresenter loginPresenter;
     private final RegisterPresenter registerPresenter;
     private final InboxPresenter inboxPresenter;
+
+    private final InterestsPresenter interestsPresenter;
 //    private final ChatPresenter chatPresenter;
 
     public ClientPresenter(WebSocketClient client, ClientUI view) {
@@ -25,6 +26,7 @@ public class ClientPresenter {
         this.registerPresenter = new RegisterPresenter(mainView.getRegisterView(), client , this);
 //        this.chatPresenter = new ChatPresenter(mainView.getInboxView().getChatView(), client, inboxPresenter);
         this.inboxPresenter = new InboxPresenter(mainView.getInboxView(), client, this);
+        this.interestsPresenter = new InterestsPresenter(mainView.getInterestsView(), client, this);
 
         mainView.showPane(PaneSelector.LOGIN);
     }
@@ -36,6 +38,12 @@ public class ClientPresenter {
         inboxPresenter.getFriendsPresenter().refreshAllLists();
         inboxPresenter.getInboxView().showPane(PaneSelector.FRIENDS);
         inboxPresenter.getFriendsPresenter().refreshAllLists();
+    }
+
+    public void onInterestShow() throws Exception{
+        inboxPresenter.loadSessionInfo();
+        interestsPresenter.loadData();
+        mainView.showPane(PaneSelector.INTERESTS);
     }
 
     public void onLogout() {

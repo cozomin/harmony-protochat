@@ -235,9 +235,10 @@ public final class WebSocketClient {
         channel.writeAndFlush(frame);
     }
 
-    public void createGroup(String groupName, List<String> members) throws Exception {
+    public void createGroup(String groupName, List<String> topics, List<String> members) throws Exception {
         GroupCreationReq groupCreationReq = new GroupCreationReq();
         groupCreationReq.setName(groupName);
+        groupCreationReq.setTopics(topics);
         groupCreationReq.setCreator(username);
         groupCreationReq.setMembers(members);
 
@@ -253,6 +254,58 @@ public final class WebSocketClient {
     public void deleteMessage(Long messId, Long chatId) throws Exception {
         MessageDeleteReq req = new MessageDeleteReq(messId, chatId);
         channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+    }
+
+    public synchronized List<String> fetchInterests() throws Exception {
+        handler.prepareForInterests();
+        InterestsReq req = new InterestsReq(InterestsOperation.FETCH.name(), handler.getCurrentUsername(), null);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+
+        InterestsRes res = handler.awaitInterestsResponse();
+        if (res.isSuccess() && res.getInterests() != null) {
+            return res.getInterests();
+        }
+        return new java.util.ArrayList<>();
+    }
+
+    public synchronized List<String> fetchTopPopularInterests() throws Exception {
+        handler.prepareForInterests();
+
+        // Pass null for username and interest since this is a global query
+        InterestsReq req = new InterestsReq(InterestsOperation.FETCH_TOP.name(), null, null);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+
+        InterestsRes res = handler.awaitInterestsResponse();
+        if (res.isSuccess() && res.getInterests() != null) {
+            return res.getInterests();
+        }
+
+        return new java.util.ArrayList<>();
+    }
+
+    public synchronized List<String> addInterest(String interest) throws Exception {
+        handler.prepareForInterests();
+        InterestsReq req = new InterestsReq(InterestsOperation.ADD.name(), handler.getCurrentUsername(), interest);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+
+        InterestsRes res = handler.awaitInterestsResponse();
+        if (res.isSuccess() && res.getInterests() != null) {
+            return res.getInterests();
+        }
+        return new java.util.ArrayList<>();
+    }
+
+    public synchronized List<String> removeInterest(String interest) throws Exception {
+        handler.prepareForInterests();
+
+        InterestsReq req = new InterestsReq(InterestsOperation.REMOVE.name(), handler.getCurrentUsername(), interest);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+
+        InterestsRes res = handler.awaitInterestsResponse();
+        if (res.isSuccess() && res.getInterests() != null) {
+            return res.getInterests();
+        }
+        return new java.util.ArrayList<>();
     }
 
     public synchronized String polishMessageText(String originalText) throws Exception {

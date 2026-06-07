@@ -15,6 +15,7 @@ public class ClientUI extends JFrame {
     private final LoginPanel loginPanel = new LoginPanel();
     private final RegisterPanel registerPanel = new RegisterPanel();
     private final InboxPanel inboxPanel = new InboxPanel();
+    private final InterestsPanel interestsPanel = new InterestsPanel();
 
     //They are glued together by the cardLayout and JPanel cards
 
@@ -33,6 +34,7 @@ public class ClientUI extends JFrame {
         cards.add(loginPanel, PaneSelector.LOGIN.name());
         cards.add(registerPanel, PaneSelector.REGISTER.name());
         cards.add(inboxPanel, PaneSelector.INBOX.name());
+        cards.add(interestsPanel, PaneSelector.INTERESTS.name());
 
         setContentPane(cards);
         cardLayout.show(cards, PaneSelector.LOGIN.name());
@@ -54,6 +56,8 @@ public class ClientUI extends JFrame {
     public InboxPanel getInboxView() {
         return inboxPanel;
     }
+
+    public InterestsPanel getInterestsView() {return interestsPanel;}
 
 //    public static void main(String[] args) {
 //        FlatInterFont.install();

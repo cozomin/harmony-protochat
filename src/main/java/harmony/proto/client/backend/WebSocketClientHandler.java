@@ -44,6 +44,8 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private volatile CompletableFuture<ChatMembersRes> chatMembersFuture;
     private volatile CompletableFuture<AIPolishRes> aiPolishFuture;
 
+    private volatile CompletableFuture<InterestsRes> interestsFuture;
+
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
     }
@@ -95,6 +97,10 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         aiPolishFuture = new CompletableFuture<>();
     }
 
+    public synchronized void prepareForInterests() {
+        interestsFuture = new CompletableFuture<>();
+    }
+
     public LoginRes awaitLoginResponse() throws Exception {
         return loginFuture.get(10, TimeUnit.SECONDS);
     }
@@ -112,11 +118,15 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     }
 
     public ChatMembersRes awaitChatMembersResponse() throws Exception{
-        return chatMembersFuture.get(5, TimeUnit.SECONDS);
+        return chatMembersFuture.get(10, TimeUnit.SECONDS);
     }
 
     public AIPolishRes awaitAIPolishResponse() throws Exception {
         return aiPolishFuture.get(10, TimeUnit.SECONDS);
+    }
+
+    public InterestsRes awaitInterestsResponse() throws Exception {
+        return interestsFuture.get(10, java.util.concurrent.TimeUnit.SECONDS);
     }
 
     @Override
@@ -190,7 +200,8 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                     loginFuture.complete(loginRes);
                 }
                 else if (dto instanceof ChatRes res){
-                    chatFuture.complete(res);
+                    if(chatFuture != null)
+                        chatFuture.complete(res);
                 }
                 else if (dto instanceof GroupCreationRes res){
                     if(liveGroupCreationListener != null){
@@ -198,7 +209,8 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                     }
                 }
                 else if (dto instanceof ChatMembersRes res){
-                    chatMembersFuture.complete(res);
+                    if(chatMembersFuture != null)
+                        chatMembersFuture.complete(res);
                 }
                 else if (dto instanceof MessageUpdateRes updateDTO) {
 //                    System.out.println("Client received update event for ID: " + updateDTO.getMessId());
@@ -211,6 +223,10 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                 else if (dto instanceof AIPolishRes res) {
                     if (aiPolishFuture != null)
                         aiPolishFuture.complete(res);
+                }
+                else if (dto instanceof InterestsRes res) {
+                    if (interestsFuture != null)
+                        interestsFuture.complete(res);
                 }
 
             } catch (Exception e) {

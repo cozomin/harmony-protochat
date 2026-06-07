@@ -3,6 +3,7 @@ package harmony.proto.server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.model.chat.response.ChatResponse;
+import harmony.proto.dao.InterestsDao;
 import harmony.proto.dao.ChatDao;
 import harmony.proto.dao.UserDao;
 import harmony.proto.dto.*;
@@ -251,7 +252,14 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                     throw new RuntimeException(e);
                 }
                 TextWebSocketFrame frame = new TextWebSocketFrame(jsonRes);
-                for(String member : req.getMembers()){
+
+                List<String> recipients = new ArrayList<>(req.getMembers());
+
+                if (!recipients.contains(req.getCreator())) {
+                    recipients.add(req.getCreator());
+                }
+
+                for(String member : recipients){
                     Channel userChannel = onlineUsers.get(member);
                     if(userChannel != null && userChannel.isActive()) {
                         userChannel.writeAndFlush(frame.retainedDuplicate());
@@ -260,6 +268,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                         //some kind of free after use error
                     }
                 }
+
                 frame.release(); // manually release the frame after sending it to the clients
             }, dbExecutor);
         }
@@ -369,6 +378,18 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }
+                }
+            }, dbExecutor);
+        }
+        else if (dto instanceof InterestsReq req) {
+            req.setUsername(sessionUser); // Ensure we use the authenticated user
+            CompletableFuture.runAsync(() -> {
+                InterestsRes res = processInterestsReq(req);
+                try {
+                    String jsonRes = mapper.writeValueAsString(res);
+                    ctx.channel().writeAndFlush(new TextWebSocketFrame(jsonRes));
+                } catch (JsonProcessingException e) {
+                    e.printStackTrace();
                 }
             }, dbExecutor);
         }
@@ -526,7 +547,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         DataSource ds = connection_manager.getDataSource();
         ChatDao chatDao = new ChatDao(ds);
         try{
-            chatDao.addGroup(req.getName(), req.getCreator(), req.getMembers());
+            chatDao.addGroup(req.getName(), req.getTopics(), req.getCreator(), req.getMembers());
             return new GroupCreationRes(req.getCreator(), "success");
         }
         catch (SQLException e){
@@ -543,6 +564,37 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         }
         catch (SQLException e){
             return new ChatMembersRes(null,  "Database failure: " + e.getMessage());
+        }
+    }
+
+    private InterestsRes processInterestsReq(InterestsReq req) {
+        DataSource ds = connection_manager.getDataSource();
+        InterestsDao dao = new InterestsDao(ds);
+
+        try {
+            if (InterestsOperation.ADD.name().equals(req.getOperation())) {
+                dao.addInterest(req.getUsername(), req.getInterest());
+                List<String> updatedInterests = dao.fetchUserInterests(req.getUsername());
+                return new InterestsRes("success", updatedInterests);
+
+            } else if (InterestsOperation.FETCH.name().equals(req.getOperation())) {
+                List<String> interests = dao.fetchUserInterests(req.getUsername());
+                return new InterestsRes("success", interests);
+
+            } else if (InterestsOperation.FETCH_TOP.name().equals(req.getOperation())) {
+                // Fetch the top 20 most popular interests across the whole server
+                List<String> topInterests = dao.fetchTopInterests(20);
+                return new InterestsRes("success", topInterests);
+
+            } else if (InterestsOperation.REMOVE.name().equals(req.getOperation())) {
+                dao.removeInterest(req.getUsername(), req.getInterest());
+                List<String> updatedInterests = dao.fetchUserInterests(req.getUsername());
+                return new InterestsRes("success", updatedInterests);
+            }
+
+            return new InterestsRes("Invalid operation", null);
+        } catch (SQLException e) {
+            return new InterestsRes("Database error: " + e.getMessage(), null);
         }
     }
 

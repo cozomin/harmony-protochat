@@ -5,5 +5,6 @@ public enum PaneSelector {
     REGISTER,
     INBOX,
     CHATBOX,
-    FRIENDS
+    FRIENDS,
+    INTERESTS
 }

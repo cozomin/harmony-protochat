@@ -118,12 +118,12 @@ public class ChatDao {
 
     //TODO: add timestamp
 
-    public void addGroup(String name, String creator, List<String> users) throws SQLException{
+    public void addGroup(String name, List<String> topics, String creator, List<String> users) throws SQLException{
         String sql = "insert into chat values(default, ?, true) returning chatID";
         long chatID;
         Connection con = dataSource.getConnection();
-        PreparedStatement ps = con.prepareStatement(sql);
 
+        PreparedStatement ps = con.prepareStatement(sql);
         ps.setString(1, name);
         try (ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
@@ -142,12 +142,40 @@ public class ChatDao {
         sql = "insert into chat_member values(" + chatID + ", ?, 'member') ";
         try (PreparedStatement ps2 = con.prepareStatement(sql);) {
             for (var user : users) {
-                System.out.println(user + "\n3");
-
                 ps2.setString(1, user);
                 ps2.addBatch();
             }
             ps2.executeBatch();
+        }
+
+        if (topics != null && !topics.isEmpty()) {
+            String insertTopic = "INSERT INTO hm_topics (name, is_official) VALUES (?, false) ON CONFLICT (name) DO NOTHING";
+            String getTopicId = "SELECT topicID FROM hm_topics WHERE name = ?";
+            String linkChat = "INSERT INTO chat_topic (chatID, topicID) VALUES (?, ?) ON CONFLICT DO NOTHING";
+
+            for (String tag : topics) {
+                String cleanTag = tag.trim();
+                if (cleanTag.isEmpty()) continue;
+
+                try (PreparedStatement p1 = con.prepareStatement(insertTopic)) {
+                    p1.setString(1, cleanTag);
+                    p1.executeUpdate();
+                }
+
+                try (PreparedStatement p2 = con.prepareStatement(getTopicId)) {
+                    p2.setString(1, cleanTag);
+                    try (ResultSet rs = p2.executeQuery()) {
+                        if (rs.next()) {
+                            long topicId = rs.getLong("topicID");
+                            try (PreparedStatement p3 = con.prepareStatement(linkChat)) {
+                                p3.setLong(1, chatID);
+                                p3.setLong(2, topicId);
+                                p3.executeUpdate();
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

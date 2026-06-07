@@ -57,29 +57,85 @@ public class FriendsPresenter {
             List<UserDTO> selectedUsers = allView.getFriendsList().getSelectedValuesList();
 
             if (selectedUsers != null && !selectedUsers.isEmpty()) {
-                String groupName = JOptionPane.showInputDialog(friendsView, "Enter Group Name:");
 
-                if (groupName != null && !groupName.trim().isEmpty()) {
-                    List<String> stringUsers = new ArrayList<>();
-                    for (UserDTO user : selectedUsers) {
-                        stringUsers.add(user.getUsername());
+                List<String> stringUsers = new ArrayList<>();
+                for (UserDTO user : selectedUsers) {
+                    stringUsers.add(user.getUsername());
+                }
+
+                java.util.List<String> groupTopics = new java.util.ArrayList<>();
+
+                JTextField nameField = new JTextField(15);
+                JTextField topicField = new JTextField(15);
+
+                nameField.setMaximumSize(new Dimension(Integer.MAX_VALUE, nameField.getPreferredSize().height));
+                topicField.setMaximumSize(new Dimension(Integer.MAX_VALUE, topicField.getPreferredSize().height));
+
+                JPanel tagsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 5));
+                tagsPanel.setPreferredSize(new Dimension(300, 60));
+
+                topicField.addActionListener(e1 -> {
+                    String topic = topicField.getText().trim();
+
+                    if (topic.isEmpty()) return;
+
+                    if (topic.contains(" ")) {
+                        JOptionPane.showMessageDialog(null, "Topics cannot contain spaces! Use single words.", "Invalid Topic", JOptionPane.WARNING_MESSAGE);
+                    } else if (!groupTopics.contains(topic)) {
+                        groupTopics.add(topic);
+
+                        JLabel tagLabel = new JLabel("#" + topic);
+                        tagLabel.setOpaque(true);
+                        tagLabel.setBackground(new Color(220, 220, 220));
+
+                        tagLabel.setForeground(Color.BLACK);
+                        tagLabel.setBorder(BorderFactory.createEmptyBorder(3, 6, 3, 6));
+
+                        tagsPanel.add(tagLabel);
+                        tagsPanel.revalidate();
+                        tagsPanel.repaint();
+
+                        topicField.setText("");
+                    } else {
+                        topicField.setText("");
                     }
+                });
 
-                    SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                        @Override
-                        protected Void doInBackground() throws Exception {
-                            client.createGroup(groupName.trim(), stringUsers);
-                            return null;
+                JPanel panel = new JPanel();
+                panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+
+                JLabel nameLabel = new JLabel("Group Name:");
+                JLabel topicLabel = new JLabel("Add Topic:");
+
+                nameLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                nameField.setAlignmentX(Component.LEFT_ALIGNMENT);
+                topicLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+                topicField.setAlignmentX(Component.LEFT_ALIGNMENT);
+                tagsPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+                panel.add(nameLabel);
+                panel.add(nameField);
+                panel.add(Box.createVerticalStrut(10));
+                panel.add(topicLabel);
+                panel.add(topicField);
+                panel.add(Box.createVerticalStrut(5));
+                panel.add(tagsPanel);
+
+                int result = JOptionPane.showConfirmDialog(allView, panel,
+                        "Create New Group", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+                if (result == JOptionPane.OK_OPTION) {
+                    String groupName = nameField.getText().trim();
+
+                    if (!groupName.isEmpty()) {
+                        try {
+                            client.createGroup(groupName, groupTopics, stringUsers);
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
                         }
-
-                        @Override
-                        protected void done() {
-
-                            inboxPresenter.loadChats();
-                            allView.getFriendsList().clearSelection();
-                        }
-                    };
-                    worker.execute();
+                    } else {
+                        JOptionPane.showMessageDialog(allView, "Group Name cannot be empty!", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             }
         });
