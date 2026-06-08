@@ -381,6 +381,38 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                 }
             }, dbExecutor);
         }
+        else if (dto instanceof AIRecommendGroupsReq req) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    DataSource ds = connection_manager.getDataSource();
+                    ChatDao chatDao = new ChatDao(ds);
+                    String groupsContext = chatDao.fetchAllGroupsWithTopics();
+
+                    String prompt = String.format("""
+                        The user has selected the following topic of interest: "%s".
+                        Here is a list of available chat groups and their associated topics on our server:
+                        %s
+                        Select 3 to 5 groups from this list that are the most relevant to the user's selected topic.
+                        Output ONLY the group names separated by commas. Do not include any other text, greetings, or formatting.
+                        If no groups match, or if the list is empty, return an empty string.
+                        """, req.getTopic(), groupsContext);
+
+                    String aiResponse = aiModel.chat(prompt);
+
+                    List<String> groups = new ArrayList<>();
+                    if (aiResponse != null && !aiResponse.trim().isEmpty()) {
+                        for (String g : aiResponse.split(",")) {
+                            groups.add(g.trim());
+                        }
+                    }
+
+                    AIRecommendGroupsRes res = new AIRecommendGroupsRes("success", groups);
+                    ctx.channel().writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(res)));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }, dbExecutor);
+        }
         else if (dto instanceof InterestsReq req) {
             req.setUsername(sessionUser); // Ensure we use the authenticated user
             CompletableFuture.runAsync(() -> {
@@ -390,6 +422,24 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                     ctx.channel().writeAndFlush(new TextWebSocketFrame(jsonRes));
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
+                }
+            }, dbExecutor);
+        }
+        else if (dto instanceof JoinGroupReq req) {
+            CompletableFuture.runAsync(() -> {
+                try {
+                    DataSource ds = connection_manager.getDataSource();
+                    ChatDao dao = new ChatDao(ds);
+
+                    dao.joinGroupByName(req.getGroupName(), sessionUser);
+
+                    JoinGroupRes res = new JoinGroupRes("success");
+                    ctx.channel().writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(res)));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    try {
+                        ctx.channel().writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(new JoinGroupRes("error"))));
+                    } catch (Exception ex) {}
                 }
             }, dbExecutor);
         }
@@ -558,12 +608,14 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
     private ChatMembersRes processChatMembersReq(ChatMembersReq req) {
         DataSource ds = connection_manager.getDataSource();
         ChatDao chatDao = new ChatDao(ds);
-        try{
-            List<String>  chatMembers = chatDao.findUsersInChat(req.getChatId());
-            return new ChatMembersRes(chatMembers, "success");
+        try {
+            List<String> chatMembers = chatDao.findUsersInChat(req.getChatId());
+            List<String> chatTopics = chatDao.findTopicsForChat(req.getChatId());
+
+            return new ChatMembersRes(chatMembers, chatTopics, "success");
         }
         catch (SQLException e){
-            return new ChatMembersRes(null,  "Database failure: " + e.getMessage());
+            return new ChatMembersRes(null, null, "Database failure: " + e.getMessage());
         }
     }
 

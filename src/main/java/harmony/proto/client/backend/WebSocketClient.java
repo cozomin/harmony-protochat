@@ -204,18 +204,13 @@ public final class WebSocketClient {
 
     }
 
-    public synchronized List<String> fetchChatMembers(Long chatID) throws Exception {
+    public synchronized ChatMembersRes fetchChatMembers(Long chatID) throws Exception {
         handler.prepareForChatMembers();
         ChatMembersReq req = new ChatMembersReq(chatID);
         String json = mapper.writeValueAsString(req);
         channel.writeAndFlush(new TextWebSocketFrame(json));
 
-        ChatMembersRes res = handler.awaitChatMembersResponse();
-        if(res.isSuccess() && res.getChatMembers() != null){
-            return res.getChatMembers();
-        }
-
-        return new java.util.ArrayList<>();
+        return handler.awaitChatMembersResponse();
     }
 
     public void sendMessage(String input, Long chatID) throws Exception {
@@ -319,6 +314,27 @@ public final class WebSocketClient {
             return res.getPolishedText();
         }
         return originalText;
+    }
+
+    public synchronized List<String> getAIRecommendedGroups(String topic) throws Exception {
+        handler.prepareForAIGroupReq();
+        AIRecommendGroupsReq req = new AIRecommendGroupsReq(topic);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+
+        AIRecommendGroupsRes res = handler.awaitAIGroupResponse();
+        if (res.isSuccess() && res.getRecommendedGroups() != null) {
+            return res.getRecommendedGroups();
+        }
+        return new java.util.ArrayList<>();
+    }
+
+    public synchronized boolean joinGroup(String groupName) throws Exception {
+        handler.prepareForJoinGroup();
+        JoinGroupReq req = new JoinGroupReq(groupName);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+
+        JoinGroupRes res = handler.awaitJoinGroupResponse();
+        return res != null && res.isSuccess();
     }
 
     public synchronized void disconnect() throws Exception {

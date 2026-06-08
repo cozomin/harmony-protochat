@@ -15,6 +15,7 @@ public class InterestsPanel extends JPanel {
     private final JButton addSelectedButton = new JButton("Add >");
     private final JButton removeSelectedButton = new JButton("< Remove");
     private final JButton nextButton = new JButton("INBOX");
+    private final JButton joinSuggestedButton = new JButton("Join Server");
 
     private final JTextField newInterestField = new JTextField();
     private final JButton createButton = new JButton("Create Custom");
@@ -66,13 +67,43 @@ public class InterestsPanel extends JPanel {
 
         add(dualListPanel, BorderLayout.CENTER);
 
-        // Bottom Custom Entry Area
+        // Bottom Area (Custom Entry + AI Recommendations)
         JPanel bottomPanel = new JPanel(new BorderLayout(5, 5));
         bottomPanel.add(new JLabel("Don't see your interest?"), BorderLayout.WEST);
         bottomPanel.add(newInterestField, BorderLayout.CENTER);
         bottomPanel.add(createButton, BorderLayout.EAST);
-        add(bottomPanel, BorderLayout.SOUTH);
+
+        // AI Recommendations Panel
+        JPanel aiPanel = new JPanel(new BorderLayout(5, 5));
+        aiPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
+        aiPanel.add(new JLabel("AI Suggested Servers for Selected Topics"), BorderLayout.NORTH);
+        aiRecommendedList.setBackground(new Color(40, 42, 54));
+        aiRecommendedList.setForeground(new Color(248, 248, 242));
+        aiPanel.add(new JScrollPane(aiRecommendedList), BorderLayout.CENTER);
+
+        JPanel aiButtonPanel = new JPanel();
+        aiButtonPanel.setLayout(new BoxLayout(aiButtonPanel, BoxLayout.Y_AXIS));
+        aiButtonPanel.add(Box.createVerticalGlue());
+        joinSuggestedButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        aiButtonPanel.add(joinSuggestedButton);
+        aiButtonPanel.add(Box.createVerticalGlue());
+
+        aiPanel.add(aiButtonPanel, BorderLayout.EAST);
+
+        aiPanel.setPreferredSize(new Dimension(0, 150));
+
+        JPanel southWrapper = new JPanel(new BorderLayout());
+        southWrapper.add(bottomPanel, BorderLayout.NORTH);
+        southWrapper.add(aiPanel, BorderLayout.CENTER);
+
+        add(southWrapper, BorderLayout.SOUTH);
     }
+
+    private final DefaultListModel<String> aiRecommendedModel = new DefaultListModel<>();
+    private final JList<String> aiRecommendedList = new JList<>(aiRecommendedModel);
+
+    public DefaultListModel<String> getAiRecommendedModel() { return aiRecommendedModel; }
+    public JList<String> getMyInterestsList() { return myInterestsList; }
 
     public DefaultListModel<String> getPopularModel() { return popularModel; }
     public DefaultListModel<String> getMyInterestsModel() { return myInterestsModel; }
@@ -90,4 +121,7 @@ public class InterestsPanel extends JPanel {
         createButton.addActionListener(listener);
         newInterestField.addActionListener(listener);
     }
+
+    public void setJoinSuggestedAction(ActionListener listener) { joinSuggestedButton.addActionListener(listener); }
+    public String getSelectedSuggestedServer() { return aiRecommendedList.getSelectedValue(); }
 }

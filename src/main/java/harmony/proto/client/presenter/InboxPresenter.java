@@ -154,29 +154,45 @@ public class InboxPresenter {
         worker.execute();
     }
 
-    public void loadChatMembers(){
+    public void loadChatMembers() {
         ChatDTO selectedGroup = inboxView.getGroupsList().getSelectedValue();
         if (selectedGroup == null) {
             return;
         }
 
-        SwingWorker<List<String>, Void> worker = new SwingWorker<>() {
+        SwingWorker<harmony.proto.dto.res.ChatMembersRes, Void> worker = new SwingWorker<>() {
             @Override
-            protected List<String> doInBackground() throws Exception {
+            protected harmony.proto.dto.res.ChatMembersRes doInBackground() throws Exception {
+                // Fetch the object containing both members and topics
                 return client.fetchChatMembers(selectedGroup.getChatID());
             }
 
             @Override
             protected void done() {
                 try {
-                    inboxView.prepareLoadChatMembers();
-                    List<String> chatMembers = get();
-                    if (chatMembers != null) {
-                        for (String chatMember : chatMembers) {
-                            inboxView.getMembersListModel().addElement(chatMember);
+                    inboxView.prepareLoadChatMembers(); // Clears member list
+                    inboxView.prepareLoadTopics();      // Clears topic list
+
+                    harmony.proto.dto.res.ChatMembersRes res = get();
+
+                    if (res != null && res.isSuccess()) {
+                        // Populate Members
+                        if (res.getChatMembers() != null) {
+                            for (String member : res.getChatMembers()) {
+                                inboxView.getMembersListModel().addElement(member);
+                            }
+                        }
+
+                        // Populate Topics
+                        if (res.getChatTopics() != null && !res.getChatTopics().isEmpty()) {
+                            for (String topic : res.getChatTopics()) {
+                                inboxView.getTopicsListModel().addElement("$ " + topic);
+                            }
+                        } else {
+                            inboxView.getTopicsListModel().addElement("No topics set");
                         }
                     } else {
-                        System.out.println("No members found");
+                        System.out.println("Failed to load group details");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

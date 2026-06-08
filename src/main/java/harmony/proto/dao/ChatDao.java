@@ -179,6 +179,60 @@ public class ChatDao {
         }
     }
 
+    public String fetchAllGroupsWithTopics() throws SQLException {
+        StringBuilder sb = new StringBuilder();
+        // Aggregates topics into a comma-separated list for each group
+        String sql = """
+            SELECT c.chatName, string_agg(t.name, ', ') as topics
+            FROM chat c
+            JOIN chat_topic ct ON c.chatID = ct.chatID
+            JOIN hm_topics t ON ct.topicID = t.topicID
+            WHERE c.isGroup = true
+            GROUP BY c.chatID, c.chatName
+        """;
+
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                sb.append("Group Name: '").append(rs.getString("chatName"))
+                        .append("' | Topics: ").append(rs.getString("topics")).append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    public List<String> findTopicsForChat(long chatID) throws SQLException {
+        List<String> topics = new ArrayList<>();
+
+        String sql = "SELECT t.name FROM hm_topics t JOIN chat_topic ct ON t.topicID = ct.topicID WHERE ct.chatID = ?";
+
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setLong(1, chatID);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    topics.add(rs.getString("name"));
+                }
+            }
+        }
+        return topics;
+    }
+
+    public void joinGroupByName(String groupName, String username) throws SQLException {
+        String sql = """
+            INSERT INTO chat_member (chatID, memberID, hm_role) 
+            SELECT chatID, ?, 'member' FROM chat WHERE chatName = ? AND isGroup = true LIMIT 1 
+            ON CONFLICT DO NOTHING
+        """;
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, username);
+            ps.setString(2, groupName);
+            ps.executeUpdate();
+        }
+    }
+
     public void touchLastAccess(Long chatId, String username) throws SQLException {
         String sql = "update chat_member set last_access = ? where chatID = ? and memberID = ?";
         try (Connection con = dataSource.getConnection();

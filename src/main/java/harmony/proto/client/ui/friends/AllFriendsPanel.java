@@ -14,6 +14,7 @@ public class AllFriendsPanel extends JPanel {
     private final JButton messageButton = new JButton("Message");
     private final JButton removeButton = new JButton("Remove Friend");
     private final JButton createGroupButton = new JButton("Create Group");
+    private final JButton joinGroupButton = new JButton("Join Group");
 
     public AllFriendsPanel() {
         init();
@@ -33,6 +34,7 @@ public class AllFriendsPanel extends JPanel {
         bottomBar.setLayout(new BoxLayout(bottomBar, BoxLayout.X_AXIS));
 
         bottomBar.add(createGroupButton);
+        bottomBar.add(joinGroupButton);
         bottomBar.add(Box.createHorizontalGlue());
         bottomBar.add(messageButton);
         bottomBar.add(removeButton);
@@ -44,6 +46,10 @@ public class AllFriendsPanel extends JPanel {
 
     public void createGroupButtonAction(ActionListener actionListener) {
         createGroupButton.addActionListener(actionListener);
+    }
+
+    public void joinGroupButtonAction(ActionListener actionListener) {
+        joinGroupButton.addActionListener(actionListener);
     }
 
     public void messageButtonAction(ActionListener actionListener) {
