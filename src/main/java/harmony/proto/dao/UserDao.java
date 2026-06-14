@@ -69,34 +69,41 @@ public class UserDao {
     }
 
     public void addDM(String user1, String user2) throws SQLException{
-        String sql = "insert into chat values(default, default, false) returning chatID";
-        Long chatID;
+        String sqlChat = "insert into chat values(default, default, false) returning chatID";
+        String sqlMembers = "insert into chat_member values (?, ?, 'member')";
 
-        try (Connection con = dataSource.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    chatID = rs.getLong("chatID");
-                } else {
-                    throw new SQLException("Failed to create DM: No chatID returned.");
+        try (Connection con = dataSource.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                Long chatID;
+                try (PreparedStatement ps = con.prepareStatement(sqlChat);
+                     ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        chatID = rs.getLong("chatID");
+                    } else {
+                        throw new SQLException("Failed to create DM: No chatID returned.");
+                    }
                 }
-            }
-        }
-        sql = "insert into chat_member values (?, ?, 'member');";
-        try (Connection con = dataSource.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
 
-            ps.setLong(1, chatID);
-            ps.setString(2, user1);
-            ps.addBatch();
+                try (PreparedStatement ps = con.prepareStatement(sqlMembers)) {
+                    ps.setLong(1, chatID);
+                    ps.setString(2, user1);
+                    ps.addBatch();
 
-            if (!user1.equals(user2)) {
-                ps.setLong(1, chatID);
-                ps.setString(2, user2);
-                ps.addBatch();
+                    if (!user1.equals(user2)) {
+                        ps.setLong(1, chatID);
+                        ps.setString(2, user2);
+                        ps.addBatch();
+                    }
+                    ps.executeBatch();
+                }
+                con.commit();
+            } catch (SQLException e) {
+                con.rollback();
+                throw e;
+            } finally {
+                con.setAutoCommit(true);
             }
-            ps.executeBatch();
         }
     }
 

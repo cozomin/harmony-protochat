@@ -29,7 +29,7 @@ import java.util.List;
 
 public final class WebSocketClient {
 
-    static final String URL = System.getProperty("url", "wss://harmony-chat.space/chat");
+//    static final String URL = System.getProperty("url", "wss://harmony-chat.space/chat");
 //    static final String URL = System.getProperty("url", "ws://127.0.0.1:7575/chat");
     static final int MAX_CONTENT_LENGTH = 8192;
 
@@ -53,7 +53,7 @@ public final class WebSocketClient {
         if (isConnected()) {
             return;
         }
-
+        final String URL = System.getProperty("url", "wss://harmony-chat.space/chat");
         URI uri = new URI(URL);
         String scheme = uri.getScheme() == null ? "ws" : uri.getScheme();
         final String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();
@@ -223,7 +223,7 @@ public final class WebSocketClient {
 
         //Converts Message to JSON for transport
         String jsonMsg = mapper.writeValueAsString(messageDTO);
-        System.out.println(jsonMsg);
+//        System.out.println(jsonMsg);
 
         //Sends the json through a TextWebSocketFrame
         WebSocketFrame frame = new TextWebSocketFrame(jsonMsg);

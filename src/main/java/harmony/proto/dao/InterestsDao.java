@@ -64,27 +64,37 @@ public class InterestsDao {
         String linkUser = "INSERT INTO user_topic (userID, topicID) VALUES (?, ?) ON CONFLICT DO NOTHING";
 
         try (Connection conn = dataSource.getConnection()) {
-            try (PreparedStatement stmt1 = conn.prepareStatement(insertTopic)) {
-                stmt1.setString(1, interest);
-                stmt1.executeUpdate();
-            }
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement stmt1 = conn.prepareStatement(insertTopic)) {
+                    stmt1.setString(1, interest);
+                    stmt1.executeUpdate();
+                }
 
-            long topicId = -1;
-            try (PreparedStatement stmt2 = conn.prepareStatement(getTopicId)) {
-                stmt2.setString(1, interest);
-                try (ResultSet rs = stmt2.executeQuery()) {
-                    if (rs.next()) {
-                        topicId = rs.getLong("topicID");
+                long topicId = -1;
+                try (PreparedStatement stmt2 = conn.prepareStatement(getTopicId)) {
+                    stmt2.setString(1, interest);
+                    try (ResultSet rs = stmt2.executeQuery()) {
+                        if (rs.next()) {
+                            topicId = rs.getLong("topicID");
+                        }
                     }
                 }
-            }
 
-            if (topicId != -1) {
-                try (PreparedStatement stmt3 = conn.prepareStatement(linkUser)) {
-                    stmt3.setString(1, username);
-                    stmt3.setLong(2, topicId);
-                    stmt3.executeUpdate();
+                if (topicId != -1) {
+                    try (PreparedStatement stmt3 = conn.prepareStatement(linkUser)) {
+                        stmt3.setString(1, username);
+                        stmt3.setLong(2, topicId);
+                        stmt3.executeUpdate();
+                    }
                 }
+
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(true);
             }
         }
     }

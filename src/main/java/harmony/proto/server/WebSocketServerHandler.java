@@ -27,6 +27,7 @@ import java.security.MessageDigest;
 import java.sql.Connection;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +118,10 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         // Second parameter can be WebSocketFrame and then switch/if elses to verify the data type
 
         String json = msg.text();
+        System.out.println("SERVER RAW JSON: " + json);
+
         BaseDTO dto = mapper.readValue(json, BaseDTO.class);
+        System.out.println("SERVER DTO CLASS: " + dto.getClass().getName());
 
         String sessionUser = ctx.channel().attr(usernameKEY).get();
 
@@ -157,11 +161,19 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         }
 
         if (dto instanceof MessageDTO messageDTO) {
+//            System.out.println("ENTERED MessageDTO branch");
+//            System.out.println("sessionUser = " + sessionUser);
+//            System.out.println("chatId = " + messageDTO.getChatId());
+
             String messageText = messageDTO.getContent(); // Client message
             messageDTO.setSenderId(sessionUser);
 
             if (messageText == null || messageText.isEmpty()) {
                 return;
+            }
+
+            if (messageDTO.getSentAt() == null) {
+                messageDTO.setSentAt(Instant.now());
             }
 
             //save to database on a different thread
@@ -184,17 +196,16 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
                 try {
                     String jsonm = mapper.writeValueAsString(messageDTO);
-                    TextWebSocketFrame frame = new TextWebSocketFrame(jsonm);
 
                     for (String username : participants) {
+                        if (username == null) continue;
+
                         Channel userChannel = onlineUsers.get(username);
-                        if(userChannel != null && userChannel.isActive()) {
-                            userChannel.writeAndFlush(frame.retainedDuplicate());
+
+                        if (userChannel != null && userChannel.isActive()) {
+                            userChannel.writeAndFlush(new TextWebSocketFrame(jsonm));
                         }
                     }
-
-                    frame.release();
-
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -451,7 +462,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
         try {
             messageDao.save(msg);
-        } catch (SQLException e) {
+        } catch (Exception e) {
             System.err.println("Failed to save message to DB!");
             e.printStackTrace();
         }
@@ -472,6 +483,10 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
 
     }
 
+    public static void clearOnlineUsers() {
+        onlineUsers.clear();
+    }
+
     private LoginRes processLoginReq(LoginReq req, ChannelHandlerContext ctx) {
 
         DataSource ds = connection_manager.getDataSource();
@@ -485,7 +500,6 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             if(username == null) {
                 return new LoginRes("Wrong password!", null);
             }
-            ctx.channel().attr(usernameKEY).set(username);
 
             Channel oldChannel = onlineUsers.get(username);
             if (oldChannel != null && oldChannel.isActive()) {
@@ -494,6 +508,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                 oldChannel.close();
             }
 
+            ctx.channel().attr(usernameKEY).set(username);
             onlineUsers.put(username, ctx.channel());
             return new LoginRes("success", username);
 
@@ -521,6 +536,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             String username = userDao.signUp(req.getUsername(), passHashed);
 
             ctx.channel().attr(usernameKEY).set(username);
+            onlineUsers.put(username, ctx.channel());
             return new LoginRes("success", username);
 
         } catch (SQLException e) {

@@ -30,23 +30,21 @@ public class ChatDao {
 //TODO: every try() block is useless btw lmao
 
     public List<String> findUsersInChat(long chatID) throws SQLException{
-        String sql = "select username \n" +
-                "from chat_member join hm_user on (username = memberID) \n" +
-                "where chatID = ?";
+        String sql = "select cm.memberid \n" +
+                "from chat_member cm \n" +
+                "where cm.chatID = ?";
         List<String> users = new ArrayList<>();
         try (Connection con = dataSource.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setLong(1, chatID);
             try (ResultSet rs = ps.executeQuery()) {
                 while(rs.next()) {
-                    users.add(rs.getString("username"));
+                    users.add(rs.getString("memberid"));
                 }
             }
         }
         return users;
     }
-
-
 
     public List<ChatDTO> findUserChats(String username) throws SQLException {
         //selects all chats that userID is a member of
@@ -118,63 +116,77 @@ public class ChatDao {
 
     //TODO: add timestamp
 
-    public void addGroup(String name, List<String> topics, String creator, List<String> users) throws SQLException{
-        String sql = "insert into chat values(default, ?, true) returning chatID";
-        long chatID;
-        Connection con = dataSource.getConnection();
+    public void addGroup(String name, List<String> topics, String creator, List<String> users) throws SQLException {
+        String sqlChat = "insert into chat values(default, ?, true) returning chatID";
+        String sqlCreator = "insert into chat_member values(?, ?, 'creator')";
+        String sqlMember = "insert into chat_member values(?, ?, 'member')";
 
-        PreparedStatement ps = con.prepareStatement(sql);
-        ps.setString(1, name);
-        try (ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                chatID = rs.getLong("chatID");
-            } else {
-                throw new SQLException("Failed to create Group: No chatID returned.");
-            }
-        }
+        String insertTopic = "INSERT INTO hm_topics (name, is_official) VALUES (?, false) ON CONFLICT (name) DO NOTHING";
+        String getTopicId = "SELECT topicID FROM hm_topics WHERE name = ?";
+        String linkChat = "INSERT INTO chat_topic (chatID, topicID) VALUES (?, ?) ON CONFLICT DO NOTHING";
 
-        sql = "insert into chat_member values(" + chatID + ", ?, 'creator') ";
-        try(PreparedStatement ps1 = con.prepareStatement(sql);){
-            ps1.setString(1, creator);
-            ps1.executeUpdate();
-        }
-
-        sql = "insert into chat_member values(" + chatID + ", ?, 'member') ";
-        try (PreparedStatement ps2 = con.prepareStatement(sql);) {
-            for (var user : users) {
-                ps2.setString(1, user);
-                ps2.addBatch();
-            }
-            ps2.executeBatch();
-        }
-
-        if (topics != null && !topics.isEmpty()) {
-            String insertTopic = "INSERT INTO hm_topics (name, is_official) VALUES (?, false) ON CONFLICT (name) DO NOTHING";
-            String getTopicId = "SELECT topicID FROM hm_topics WHERE name = ?";
-            String linkChat = "INSERT INTO chat_topic (chatID, topicID) VALUES (?, ?) ON CONFLICT DO NOTHING";
-
-            for (String tag : topics) {
-                String cleanTag = tag.trim();
-                if (cleanTag.isEmpty()) continue;
-
-                try (PreparedStatement p1 = con.prepareStatement(insertTopic)) {
-                    p1.setString(1, cleanTag);
-                    p1.executeUpdate();
+        try (Connection con = dataSource.getConnection()) {
+            con.setAutoCommit(false);
+            try {
+                long chatID;
+                try (PreparedStatement ps = con.prepareStatement(sqlChat)) {
+                    ps.setString(1, name);
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            chatID = rs.getLong("chatID");
+                        } else {
+                            throw new SQLException("Failed to create Group: No chatID returned.");
+                        }
+                    }
                 }
 
-                try (PreparedStatement p2 = con.prepareStatement(getTopicId)) {
-                    p2.setString(1, cleanTag);
-                    try (ResultSet rs = p2.executeQuery()) {
-                        if (rs.next()) {
-                            long topicId = rs.getLong("topicID");
-                            try (PreparedStatement p3 = con.prepareStatement(linkChat)) {
-                                p3.setLong(1, chatID);
-                                p3.setLong(2, topicId);
-                                p3.executeUpdate();
+                try (PreparedStatement ps1 = con.prepareStatement(sqlCreator)) {
+                    ps1.setLong(1, chatID);
+                    ps1.setString(2, creator);
+                    ps1.executeUpdate();
+                }
+
+                try (PreparedStatement ps2 = con.prepareStatement(sqlMember)) {
+                    for (String user : users) {
+                        ps2.setLong(1, chatID);
+                        ps2.setString(2, user);
+                        ps2.addBatch();
+                    }
+                    ps2.executeBatch();
+                }
+
+                if (topics != null && !topics.isEmpty()) {
+                    for (String tag : topics) {
+                        String cleanTag = tag.trim();
+                        if (cleanTag.isEmpty()) continue;
+
+                        try (PreparedStatement p1 = con.prepareStatement(insertTopic)) {
+                            p1.setString(1, cleanTag);
+                            p1.executeUpdate();
+                        }
+
+                        try (PreparedStatement p2 = con.prepareStatement(getTopicId)) {
+                            p2.setString(1, cleanTag);
+                            try (ResultSet rs = p2.executeQuery()) {
+                                if (rs.next()) {
+                                    long topicId = rs.getLong("topicID");
+                                    try (PreparedStatement p3 = con.prepareStatement(linkChat)) {
+                                        p3.setLong(1, chatID);
+                                        p3.setLong(2, topicId);
+                                        p3.executeUpdate();
+                                    }
+                                }
                             }
                         }
                     }
                 }
+
+                con.commit();
+            } catch (SQLException e) {
+                con.rollback();
+                throw e;
+            } finally {
+                con.setAutoCommit(true);
             }
         }
     }
