@@ -43,8 +43,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private volatile CompletableFuture<FriendRes> friendOpFuture;
     private volatile CompletableFuture<ChatMembersRes> chatMembersFuture;
     private volatile CompletableFuture<AIPolishRes> aiPolishFuture;
-
     private volatile CompletableFuture<InterestsRes> interestsFuture;
+    private volatile CompletableFuture<AIRecommendGroupsRes> aiGroupFuture;
+    private volatile CompletableFuture<JoinGroupRes> joinGroupFuture;
 
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
@@ -96,10 +97,11 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     public synchronized void prepareForAIPolish() {
         aiPolishFuture = new CompletableFuture<>();
     }
-
+    public synchronized void prepareForAIGroupReq() { aiGroupFuture = new CompletableFuture<>(); }
     public synchronized void prepareForInterests() {
         interestsFuture = new CompletableFuture<>();
     }
+    public synchronized void prepareForJoinGroup() { joinGroupFuture = new CompletableFuture<>(); }
 
     public LoginRes awaitLoginResponse() throws Exception {
         return loginFuture.get(10, TimeUnit.SECONDS);
@@ -122,11 +124,19 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     }
 
     public AIPolishRes awaitAIPolishResponse() throws Exception {
-        return aiPolishFuture.get(10, TimeUnit.SECONDS);
+        return aiPolishFuture.get(15, TimeUnit.SECONDS);
     }
 
     public InterestsRes awaitInterestsResponse() throws Exception {
         return interestsFuture.get(10, java.util.concurrent.TimeUnit.SECONDS);
+    }
+
+    public AIRecommendGroupsRes awaitAIGroupResponse() throws Exception {
+        return aiGroupFuture.get(15, TimeUnit.SECONDS);
+    }
+
+    public JoinGroupRes awaitJoinGroupResponse() throws Exception {
+        return joinGroupFuture.get(10, TimeUnit.SECONDS);
     }
 
     @Override
@@ -227,6 +237,12 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                 else if (dto instanceof InterestsRes res) {
                     if (interestsFuture != null)
                         interestsFuture.complete(res);
+                }
+                else if (dto instanceof AIRecommendGroupsRes res) {
+                    if (aiGroupFuture != null) aiGroupFuture.complete(res);
+                }
+                else if (dto instanceof JoinGroupRes res) {
+                    if (joinGroupFuture != null) joinGroupFuture.complete(res);
                 }
 
             } catch (Exception e) {

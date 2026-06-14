@@ -10,8 +10,6 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 
 public class InboxPanel extends JPanel {
     private final ChatPanel chatPanel = new ChatPanel();
@@ -19,8 +17,6 @@ public class InboxPanel extends JPanel {
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentPanel = new JPanel(cardLayout);
-
-//    private final JPanel root = new JPanel(new BorderLayout(12, 12));
 
     private final JButton interestsButton = new JButton("Interests");
     private final JButton loadButton = new JButton("Refresh");
@@ -30,18 +26,24 @@ public class InboxPanel extends JPanel {
     private final DefaultListModel<ChatDTO> groupsListModel = new DefaultListModel<>();
     private final DefaultListModel<ChatDTO> dmsListModel = new DefaultListModel<>();
     private final DefaultListModel<String> membersListModel = new DefaultListModel<>();
+
+    private final DefaultListModel<String> topicsListModel = new DefaultListModel<>();
+
     private final JList<ChatDTO> groupsList = new JList<>(groupsListModel);
     private final JList<ChatDTO> dmsList = new JList<>(dmsListModel);
     private final JList<String> membersList = new JList<>(membersListModel);
+
+    private final JList<String> topicsList = new JList<>(topicsListModel);
 
     private JSplitPane leftSplitPane;
     private JSplitPane rightSplitPane;
     private final int originalDividerSize = 10;
 
+    JPanel rightSidebar = new JPanel();
+    JPanel topicsPanel = new JPanel();
     JPanel groupMembersPanel = new JPanel();
     JPopupMenu sidePopupMenu = new JPopupMenu();
     JMenuItem memberListButton = new JMenuItem("Member list");
-//    JButton memberListButton = new JButton("Member list");
 
     public InboxPanel() {
         init();
@@ -59,9 +61,6 @@ public class InboxPanel extends JPanel {
         // Top bar - North
         JPanel topBar = new JPanel();
         topBar.setLayout(new BoxLayout(topBar, BoxLayout.X_AXIS));
-//        topBar.add(new JLabel("User ID:"));
-//        userIdField.setEditable(false);
-//        topBar.add(userIdField);
         topBar.add(friendsButton);
         topBar.add(interestsButton);
         topBar.add(Box.createHorizontalGlue());
@@ -90,35 +89,34 @@ public class InboxPanel extends JPanel {
         sideBar.add(dmsLabel);
         sideBar.add(new JScrollPane(dmsList));
 
-//        JPanel groupMembersPanel = new JPanel();
-        groupMembersPanel.setLayout(new BoxLayout(groupMembersPanel, BoxLayout.Y_AXIS));
-        groupMembersPanel.setPreferredSize(new Dimension(320, 0));
+        // Right Sidebar
+        rightSidebar.setLayout(new BoxLayout(rightSidebar, BoxLayout.Y_AXIS));
+        rightSidebar.setPreferredSize(new Dimension(320, 0));
+
         JLabel groupMembersLabel = new JLabel("Group members");
 
-//        JPopupMenu sidePopupMenu = new JPopupMenu();
-//        JMenuItem memberListButton = new JMenuItem("Member list");
         sidePopupMenu.add(memberListButton);
         sidePopupMenu.add(new JMenuItem("Leave"));
 
-        memberListButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                toggleGroupMembers(true);
-            }
-        });
-
-        groupMembersPanel.add(groupMembersLabel);
-        groupMembersPanel.add(new JScrollPane(membersList));
+        memberListButton.addActionListener(e -> toggleGroupMembers(true));
 
         groupsList.setComponentPopupMenu(sidePopupMenu);
 
-        leftSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sideBar, contentPanel);
-        leftSplitPane.setDividerLocation(200);
-        leftSplitPane.setDividerSize(originalDividerSize);
-        leftSplitPane.setContinuousLayout(true);
+        // Members Panel
+        groupMembersPanel.setLayout(new BoxLayout(groupMembersPanel, BoxLayout.Y_AXIS));
+        groupMembersPanel.setPreferredSize(new Dimension(320, 0));
+        groupMembersPanel.add(groupMembersLabel);
+        groupMembersPanel.add(new JScrollPane(membersList));
 
-        sideBar.setMinimumSize(new Dimension(0, 0));
-        contentPanel.setMinimumSize(new Dimension(0, 0));
+        // Topics Panel
+        topicsPanel.setLayout(new BoxLayout(topicsPanel, BoxLayout.Y_AXIS));
+        topicsPanel.setPreferredSize(new Dimension(320, 0));
+
+        JLabel topicsLabel = new JLabel("Group Topics");
+        topicsLabel.setBorder(new EmptyBorder(10, 0, 5, 0));
+
+        topicsPanel.add(topicsLabel);
+        topicsPanel.add(new JScrollPane(topicsList));
 
         leftSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, sideBar, contentPanel);
         leftSplitPane.setDividerLocation(200);
@@ -141,10 +139,13 @@ public class InboxPanel extends JPanel {
             }
         });
 
+        rightSidebar.add(groupMembersPanel);
+        rightSidebar.add(topicsPanel);
+
         rightSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftSplitPane, null);
         rightSplitPane.setDividerSize(0);
         rightSplitPane.setContinuousLayout(true);
-        groupMembersPanel.setMinimumSize(new Dimension(0, 0));
+        rightSidebar.setMinimumSize(new Dimension(0, 0));
 
         rightSplitPane.addPropertyChangeListener(JSplitPane.DIVIDER_LOCATION_PROPERTY, evt -> {
             if (rightSplitPane.getRightComponent() == null) return;
@@ -158,24 +159,18 @@ public class InboxPanel extends JPanel {
             }
         });
 
-
         add(topBar, BorderLayout.NORTH);
         add(rightSplitPane, BorderLayout.CENTER);
-//        add(sideBar, BorderLayout.WEST);
-//        add(leftSplitPane);
-////        add(contentPanel, BorderLayout.CENTER);
-//        add(groupMembersPanel, BorderLayout.EAST);
 
         toggleGroupMembers(false);
-
         cardLayout.show(contentPanel, PaneSelector.FRIENDS.name());
     }
 
     public void toggleGroupMembers(boolean visible) {
         if (visible) {
-            if (rightSplitPane.getRightComponent() == groupMembersPanel) return;
+            if (rightSplitPane.getRightComponent() == rightSidebar) return;
 
-            rightSplitPane.setRightComponent(groupMembersPanel);
+            rightSplitPane.setRightComponent(rightSidebar);
             rightSplitPane.setDividerSize(originalDividerSize);
 
             int currentWidth = getWidth() > 0 ? getWidth() : 800;
@@ -192,65 +187,26 @@ public class InboxPanel extends JPanel {
         rightSplitPane.repaint();
     }
 
-    public JList<ChatDTO> getDmsList() {
-        return dmsList;
-    }
+    public JList<ChatDTO> getDmsList() { return dmsList; }
+    public JList<ChatDTO> getGroupsList() { return groupsList; }
+    public JList<String> getMembersList() { return membersList; }
+    public DefaultListModel<ChatDTO> getGroupsListModel() { return groupsListModel; }
+    public DefaultListModel<ChatDTO> getDmsListModel() { return dmsListModel; }
+    public DefaultListModel<String> getMembersListModel() { return membersListModel; }
 
-    public JList<ChatDTO> getGroupsList() {
-        return groupsList;
-    }
+    public JList<String> getTopicsList() { return topicsList; }
+    public DefaultListModel<String> getTopicsListModel() { return topicsListModel; }
 
-    public JList<String> getMembersList() {
-        return membersList;
-    }
+    public ChatPanel getChatView() { return chatPanel; }
+    public FriendsPanel getFriendsPanel() { return friendsPanel; }
 
-    public DefaultListModel<ChatDTO> getGroupsListModel() {
-        return groupsListModel;
-    }
-
-    public DefaultListModel<ChatDTO> getDmsListModel() {
-        return dmsListModel;
-    }
-
-    public DefaultListModel<String> getMembersListModel() {
-        return membersListModel;
-    }
-
-    public ChatPanel getChatView() {
-        return chatPanel;
-    }
-
-    public FriendsPanel getFriendsPanel() {
-        return friendsPanel;
-    }
-
-    public void setFriendsButtonAction(ActionListener actionListener) {
-        friendsButton.addActionListener(actionListener);
-    }
-
-    public void setInterestsButtonAction(ActionListener actionListener) {
-        interestsButton.addActionListener(actionListener);
-    }
-
-    public void setLogoutAction(ActionListener actionListener) {
-        logoutButton.addActionListener(actionListener);
-    }
-
-    public void setGroupListAction(ListSelectionListener listSelectionListener) {
-        groupsList.addListSelectionListener(listSelectionListener);
-    }
-
-    public void setDmsListAction(ListSelectionListener listSelectionListener) {
-        dmsList.addListSelectionListener(listSelectionListener);
-    }
-
-    public void setLoadAction(ActionListener actionListener) {
-        loadButton.addActionListener(actionListener);
-    }
-
-    public void setMemberListAction(ActionListener actionListener) {
-        memberListButton.addActionListener(actionListener);
-    }
+    public void setFriendsButtonAction(ActionListener actionListener) { friendsButton.addActionListener(actionListener); }
+    public void setInterestsButtonAction(ActionListener actionListener) { interestsButton.addActionListener(actionListener); }
+    public void setLogoutAction(ActionListener actionListener) { logoutButton.addActionListener(actionListener); }
+    public void setGroupListAction(ListSelectionListener listSelectionListener) { groupsList.addListSelectionListener(listSelectionListener); }
+    public void setDmsListAction(ListSelectionListener listSelectionListener) { dmsList.addListSelectionListener(listSelectionListener); }
+    public void setLoadAction(ActionListener actionListener) { loadButton.addActionListener(actionListener); }
+    public void setMemberListAction(ActionListener actionListener) { memberListButton.addActionListener(actionListener); }
 
     public void prepareLoadChats() {
         groupsListModel.clear();
@@ -259,6 +215,10 @@ public class InboxPanel extends JPanel {
 
     public void prepareLoadChatMembers(){
         membersListModel.clear();
+    }
+
+    public void prepareLoadTopics() {
+        topicsListModel.clear();
     }
 
     public void showPane(PaneSelector paneSelector) {
@@ -291,5 +251,4 @@ public class InboxPanel extends JPanel {
             return this;
         }
     }
-
 }

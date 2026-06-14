@@ -157,6 +157,40 @@ public class FriendsPresenter {
                 }
             }
         });
+
+        allView.joinGroupButtonAction(e -> {
+            String groupName = JOptionPane.showInputDialog(
+                    allView,
+                    "Enter Server Name to Join:",
+                    "Join Server",
+                    JOptionPane.QUESTION_MESSAGE
+            );
+
+            if (groupName != null && !groupName.trim().isEmpty()) {
+                String cleanName = groupName.trim();
+
+                SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected Boolean doInBackground() throws Exception {
+                        return client.joinGroup(cleanName);
+                    }
+                    @Override
+                    protected void done() {
+                        try {
+                            if (get()) {
+                                JOptionPane.showMessageDialog(allView, "Successfully joined " + cleanName + "!", "Joined", JOptionPane.INFORMATION_MESSAGE);
+                                inboxPresenter.loadChats();
+                            } else {
+                                JOptionPane.showMessageDialog(allView, "Could not join group. Check the name or you may already be a member.", "Error", JOptionPane.ERROR_MESSAGE);
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                };
+                worker.execute();
+            }
+        });
     }
 
     private void bindAddFriendActions() {

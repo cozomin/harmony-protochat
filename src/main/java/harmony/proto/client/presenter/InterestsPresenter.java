@@ -49,9 +49,49 @@ public class InterestsPresenter {
 
         view.setNextAction( e -> {
             try {
+                view.getAiRecommendedModel().clear();
                 coordinator.onLoginSuccess();
             } catch (Exception ex) {
                 throw new RuntimeException(ex);
+            }
+        });
+
+        view.getMyInterestsList().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting()) {
+                String selectedTopic = view.getMyInterestsList().getSelectedValue();
+                if (selectedTopic != null) {
+                    view.getAiRecommendedModel().clear();
+                    view.getAiRecommendedModel().addElement("Loading AI Recommendations...");
+                    fetchAIRecommendations(selectedTopic);
+                }
+            }
+        });
+
+        view.setJoinSuggestedAction(e -> {
+            String selected = view.getSelectedSuggestedServer();
+
+            if (selected != null && selected.startsWith("#")) {
+                String groupName = selected.substring(1).trim();
+
+                SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+                    @Override
+                    protected Boolean doInBackground() throws Exception {
+                        return client.joinGroup(groupName);
+                    }
+                    @Override
+                    protected void done() {
+                        try {
+                            if (get()) {
+                                JOptionPane.showMessageDialog(view, "Successfully joined " + groupName + "!", "Joined", JOptionPane.INFORMATION_MESSAGE);
+                            } else {
+                                JOptionPane.showMessageDialog(view, "Could not join group. You might already be a member.", "Error", JOptionPane.ERROR_MESSAGE);
+                            }
+                        } catch (Exception ex) {
+                            ex.printStackTrace();
+                        }
+                    }
+                };
+                worker.execute();
             }
         });
     }
@@ -123,5 +163,35 @@ public class InterestsPresenter {
                 model.addElement(item);
             }
         }
+    }
+
+    private void fetchAIRecommendations(String topic) {
+        SwingWorker<List<String>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<String> doInBackground() throws Exception {
+                return client.getAIRecommendedGroups(topic);
+            }
+            @Override
+            protected void done() {
+                try {
+                    List<String> recommendations = get();
+                    DefaultListModel<String> model = view.getAiRecommendedModel();
+                    model.clear();
+
+                    if (recommendations != null && !recommendations.isEmpty() && !recommendations.get(0).isEmpty()) {
+                        for (String group : recommendations) {
+                            model.addElement("#" + group);
+                        }
+                    } else {
+                        model.addElement("No matching servers found for this topic right now.");
+                    }
+                } catch (Exception e) {
+                    view.getAiRecommendedModel().clear();
+                    view.getAiRecommendedModel().addElement("Error fetching recommendations.");
+                    e.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
     }
 }
