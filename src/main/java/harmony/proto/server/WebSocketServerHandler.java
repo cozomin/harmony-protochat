@@ -460,6 +460,25 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                 }
             }, dbExecutor);
         }
+        else if (dto instanceof LeaveGroupReq req){
+            CompletableFuture.runAsync(() -> {
+                try {
+                    DataSource ds = connection_manager.getDataSource();
+                    ChatDao dao = new ChatDao(ds);
+
+
+                    dao.leaveGroupByName(req.getGroupName(), sessionUser);
+
+                    LeaveGroupRes res = new LeaveGroupRes("success");
+                    ctx.channel().writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(res)));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    try {
+                        ctx.channel().writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(new LeaveGroupRes("error"))));
+                    } catch (Exception ex) {}
+                }
+            }, dbExecutor);
+        }
     }
 
     private void saveToDatabase(MessageDTO msg) {

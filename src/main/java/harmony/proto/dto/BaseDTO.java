@@ -40,7 +40,9 @@ import harmony.proto.dto.res.*;
         @JsonSubTypes.Type(value = AIRecommendGroupsReq.class, name = "AIRecommendGroupsReq"),
         @JsonSubTypes.Type(value = AIRecommendGroupsRes.class, name = "AIRecommendGroupsRes"),
         @JsonSubTypes.Type(value = JoinGroupReq.class, name = "JoinGroupReq"),
-        @JsonSubTypes.Type(value = JoinGroupRes.class, name = "JoinGroupRes")
+        @JsonSubTypes.Type(value = JoinGroupRes.class, name = "JoinGroupRes"),
+        @JsonSubTypes.Type(value = LeaveGroupReq.class, name = "LeaveGroupReq"),
+        @JsonSubTypes.Type(value = LeaveGroupRes.class, name = "LeaveGroupRes")
 })
 
 public abstract class BaseDTO {

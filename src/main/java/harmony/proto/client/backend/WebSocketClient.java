@@ -339,6 +339,14 @@ public final class WebSocketClient {
         return res != null && res.isSuccess();
     }
 
+    public LeaveGroupRes leaveGroup(String groupName) throws Exception {
+        handler.prepareForLeaveGroup();
+        LeaveGroupReq req = new LeaveGroupReq(groupName);
+        channel.writeAndFlush(new TextWebSocketFrame(mapper.writeValueAsString(req)));
+        LeaveGroupRes res = handler.awaitLeaveGroupResponse();
+        return res;
+    }
+
     public synchronized void disconnect() throws Exception {
         if (channel != null && channel.isActive()) {
             channel.writeAndFlush(new CloseWebSocketFrame()).sync();

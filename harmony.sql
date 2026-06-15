@@ -67,7 +67,7 @@ select * from user_friend;
 create table chat(
 	chatID bigserial,
 		CONSTRAINT pk_chatID PRIMARY KEY (chatID),
-	chatName varchar(128),
+	chatName varchar(128) UNIQUE,
 	isGroup bool NOT NULL,
 	updated_at timestamptz --initial data crearii
 );
@@ -115,6 +115,8 @@ insert into chat_member values(7, 'cozomin', 'creator');
 insert into chat_member values(7, 'the whisperer', 'member');
 insert into chat_member values(7, 'linktronus', 'member');
 select * from chat_member;
+
+delete from chat_member where chatid = (select chatID from chat where chatName='Whoops') and memberid = '22';
 
 create table hm_message(
 	messID bigserial,
