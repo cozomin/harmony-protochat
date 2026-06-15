@@ -65,12 +65,6 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
             .temperature(0.0)
             .build();
 
-    private static final ChatLanguageModel aiModel1 = OllamaChatModel.builder()
-            .baseUrl("http://localhost:11434")
-            .modelName("gemma3:4b") // Needs to be run in terminal beforehand
-            .temperature(0.0)
-            .build();
-
     // When someone is added to the server
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
@@ -414,7 +408,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                         If no groups match, or if the list is empty, return an empty string.
                         """, req.getTopic(), groupsContext);
 
-                    String aiResponse = aiModel1.chat(prompt);
+                    String aiResponse = aiModel.chat(prompt);
 
                     List<String> groups = new ArrayList<>();
                     if (aiResponse != null && !aiResponse.trim().isEmpty()) {
