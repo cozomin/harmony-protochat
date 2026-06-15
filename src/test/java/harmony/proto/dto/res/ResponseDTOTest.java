@@ -164,6 +164,20 @@ public class ResponseDTOTest {
     }
 
     @Test
+    public void testLeaveGroupResSerialization() throws Exception {
+        LeaveGroupRes originalRes = new LeaveGroupRes("success");
+
+        String json = mapper.writeValueAsString(originalRes);
+        assertTrue(json.contains("\"type\":\"LeaveGroupRes\""), "JSON string does not contain expected type: LeaveGroupRes");
+
+        BaseDTO deserialized = mapper.readValue(json, BaseDTO.class);
+        assertInstanceOf(LeaveGroupRes.class, deserialized);
+        LeaveGroupRes result = (LeaveGroupRes) deserialized;
+
+        assertEquals("success", result.getMessage());
+    }
+
+    @Test
     public void testLoginResSerialization() throws Exception {
         LoginRes originalRes = new LoginRes("success", "coolUser");
 

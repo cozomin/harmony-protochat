@@ -5,7 +5,6 @@ import com.formdev.flatlaf.extras.FlatSVGIcon;
 import net.miginfocom.swing.MigLayout;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionListener;
 
@@ -15,73 +14,64 @@ public class RegisterPanel extends JPanel {
     private final JPasswordField txtPassword = new JPasswordField();
     private JButton bLogin;
     private final JLabel errorLabel = new JLabel();
-    JButton bBackToLogin = createNoBorderButton("Back to Login");
+    private final JButton bBackToLogin = createNoBorderButton("Sign in");
 
     public RegisterPanel() {
         init();
     }
 
     private void init() {
-        setLayout(new MigLayout("wrap 1, al center center", "[fill]"));
-//        setLayout(new BorderLayout());
-//        setBorder(new EmptyBorder(20, 20, 20, 20));
+        setLayout(new MigLayout("wrap, insets 35 40 30 40, al center top", "[fill, grow, ::30%]"));
+        
+        try {
+            FlatSVGIcon logoIcon = new FlatSVGIcon("img/icons/logo.svg", 250, 250);
+            JLabel logoLabel = new JLabel(logoIcon);
+            add(logoLabel, "align center, gapbottom 10");
+        } catch (Exception e) {
+            System.err.println("Warning: logo.svg not found.");
+        }
 
-//        add(new JLabel(new FlatSVGIcon("login/icon/logo.svg", 1.5f)));
+        JLabel lbTitle = new JLabel("Join Harmony");
+        lbTitle.putClientProperty(FlatClientProperties.STYLE, "font:bold +12;");
+        add(lbTitle, "align center, gapbottom 5");
 
-        JLabel lbTitle = new JLabel("Welcome (back)", JLabel.CENTER);
-        lbTitle.putClientProperty(FlatClientProperties.STYLE, "font:bold +15;");
-        add(lbTitle, "gapy 8 8");
-
-        add(new JLabel("Create an account to resonate with others", JLabel.CENTER));
+        JLabel lbSubtitle = new JLabel("Create an account to resonate with others");
+        lbSubtitle.putClientProperty(FlatClientProperties.STYLE, "foreground:$Label.disabledForeground;");
+        add(lbSubtitle, "align center, gapbottom 25");
 
         JLabel lbUsername = new JLabel("Username");
         lbUsername.putClientProperty(FlatClientProperties.STYLE, "font:bold;");
-        add(lbUsername, "gapy 10 5");
+        add(lbUsername, "gapbottom 5");
 
-        txtUsername.putClientProperty(FlatClientProperties.STYLE, "iconTextGap:10;");
         txtUsername.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter your username");
-//        txtUsername.putClientProperty(
-//                FlatClientProperties.TEXT_FIELD_LEADING_ICON,
-//                new FlatSVGIcon("login/icon/email.svg", 0.35f)
-//        );
-        add(txtUsername);
+        add(txtUsername, "gapbottom 15");
 
         JLabel lbPassword = new JLabel("Password");
         lbPassword.putClientProperty(FlatClientProperties.STYLE, "font:bold;");
-        add(lbPassword, "gapy 10 5");
+        add(lbPassword, "gapbottom 5");
 
-//        JButton cmdForgotPassword = createNoBorderButton("Forgot Password ?");
-//        add(cmdForgotPassword, "grow 0,gapy 10 5");
-
-        txtPassword.putClientProperty(FlatClientProperties.STYLE, "iconTextGap:10;showRevealButton:true;");
+        txtPassword.putClientProperty(FlatClientProperties.STYLE, "showRevealButton:true;");
         txtPassword.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Enter your password");
-//        txtPassword.putClientProperty(
-//                FlatClientProperties.TEXT_FIELD_LEADING_ICON,
-//                new FlatSVGIcon("login/icon/password.svg", 0.35f)
-//        );
-        add(txtPassword);
-
-//        add(new JCheckBox("Remember"), "gapy 10 10");
-
-        bLogin = new JButton("Register");
-//                , new FlatSVGIcon("login/icon/next.svg")) {
-//            @Override
-//            public boolean isDefaultButton() {
-//                return true;
-//            }
-//        };
-        bLogin.putClientProperty(FlatClientProperties.STYLE, "foreground:#FFFFFF;iconTextGap:10;");
-        bLogin.setHorizontalTextPosition(JButton.LEADING);
-        add(bLogin, "gapy n 10");
+        add(txtPassword, "gapbottom 15");
 
         errorLabel.setForeground(new Color(220, 80, 80));
-        add(errorLabel, "gapy n 5");
+        errorLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        add(errorLabel, "align center, gapbottom 10");
 
-        JLabel lbNoAccount = new JLabel("Already have an account ?");
-        lbNoAccount.putClientProperty(FlatClientProperties.STYLE, "foreground:$Label.disabledForeground;");
-        add(lbNoAccount, "split 2,gapx push n");
+        bLogin = new JButton("Register");
+        bLogin.putClientProperty(FlatClientProperties.STYLE,
+                "background:$Component.accentColor;" +
+                        "foreground:#FFFFFF;" +
+                        "font:bold;" +
+                        "margin:5,15,5,15;");
 
-        add(bBackToLogin, "gapx n push");
+        add(bLogin, "gapbottom 20");
+
+        JLabel lbHasAccount = new JLabel("Already have an account?");
+        lbHasAccount.putClientProperty(FlatClientProperties.STYLE, "foreground:$Label.disabledForeground;");
+
+        add(lbHasAccount, "split 2, align center, gapright 5");
+        add(bBackToLogin);
     }
 
     private JButton createNoBorderButton(String text) {

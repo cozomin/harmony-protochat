@@ -133,6 +133,19 @@ public class RequestDTOTest {
     }
 
     @Test
+    public void testLeaveGroupReqSerialization() throws Exception {
+        LeaveGroupReq originalReq = new LeaveGroupReq("Game night");
+
+        String json = mapper.writeValueAsString(originalReq);
+        assertTrue(json.contains("\"type\":\"LeaveGroupReq\""),"JSON string does not contain expected type: LeaveGroupReq");
+        BaseDTO deserialized = mapper.readValue(json, BaseDTO.class);
+        assertInstanceOf(LeaveGroupReq.class, deserialized);
+        LeaveGroupReq result = (LeaveGroupReq) deserialized;
+
+        assertEquals("Game night", result.getGroupName());
+    }
+
+    @Test
     public void testLoginReqSerialization() throws Exception {
         LoginReq originalReq = new LoginReq("coolUser", "securepa55");
 
