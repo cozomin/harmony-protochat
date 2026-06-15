@@ -53,7 +53,9 @@ public final class WebSocketClient {
         if (isConnected()) {
             return;
         }
-        final String URL = System.getProperty("url", "wss://harmony-chat.space/chat");
+//        final String URL = System.getProperty("url", "wss://harmony-chat.space/chat");
+        final String URL = System.getProperty("url", "ws://127.0.0.1:7575/chat");
+
         URI uri = new URI(URL);
         String scheme = uri.getScheme() == null ? "ws" : uri.getScheme();
         final String host = uri.getHost() == null ? "127.0.0.1" : uri.getHost();

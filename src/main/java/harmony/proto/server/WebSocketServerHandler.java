@@ -118,10 +118,10 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
         // Second parameter can be WebSocketFrame and then switch/if elses to verify the data type
 
         String json = msg.text();
-        System.out.println("SERVER RAW JSON: " + json);
+//        System.out.println("SERVER RAW JSON: " + json);
 
         BaseDTO dto = mapper.readValue(json, BaseDTO.class);
-        System.out.println("SERVER DTO CLASS: " + dto.getClass().getName());
+//        System.out.println("SERVER DTO CLASS: " + dto.getClass().getName());
 
         String sessionUser = ctx.channel().attr(usernameKEY).get();
 
@@ -302,7 +302,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                     DataSource ds = connection_manager.getDataSource();
                     MessageDao dao = new MessageDao(ds);
                     dao.editMessage(req.getMessId(), req.getNewContent());
-                    System.out.println("Broadcasting update for message ID: " + req.getMessId() + " action: edit");
+//                    System.out.println("Broadcasting update for message ID: " + req.getMessId() + " action: edit");
                     MessageUpdateRes updateEvent = new MessageUpdateRes(req.getMessId(), MessageUpdateAction.EDIT, req.getNewContent());
                     broadcastMessageUpdate(req.getChatId(), updateEvent);
                 } catch (SQLException e) {
@@ -317,7 +317,7 @@ public class WebSocketServerHandler extends SimpleChannelInboundHandler<TextWebS
                     MessageDao dao = new MessageDao(ds);
                     dao.deleteMessage(req.getMessId());
 
-                    System.out.println("Broadcasting update for message ID: " + req.getMessId() + " action: delete");
+//                    System.out.println("Broadcasting update for message ID: " + req.getMessId() + " action: delete");
                     MessageUpdateRes updateEvent = new MessageUpdateRes(req.getMessId(), MessageUpdateAction.DELETE, null);
                     broadcastMessageUpdate(req.getChatId(), updateEvent);
                 } catch (SQLException e) {
