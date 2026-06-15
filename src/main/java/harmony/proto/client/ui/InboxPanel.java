@@ -44,6 +44,7 @@ public class InboxPanel extends JPanel {
     JPanel groupMembersPanel = new JPanel();
     JPopupMenu sidePopupMenu = new JPopupMenu();
     JMenuItem memberListButton = new JMenuItem("Member list");
+    JMenuItem leaveButton = new JMenuItem("Leave");
 
     public InboxPanel() {
         init();
@@ -96,7 +97,7 @@ public class InboxPanel extends JPanel {
         JLabel groupMembersLabel = new JLabel("Group members");
 
         sidePopupMenu.add(memberListButton);
-        sidePopupMenu.add(new JMenuItem("Leave"));
+        sidePopupMenu.add(leaveButton);
 
         memberListButton.addActionListener(e -> toggleGroupMembers(true));
 
@@ -207,7 +208,7 @@ public class InboxPanel extends JPanel {
     public void setDmsListAction(ListSelectionListener listSelectionListener) { dmsList.addListSelectionListener(listSelectionListener); }
     public void setLoadAction(ActionListener actionListener) { loadButton.addActionListener(actionListener); }
     public void setMemberListAction(ActionListener actionListener) { memberListButton.addActionListener(actionListener); }
-
+    public void setLeaveButtonAction(ActionListener actionListener) { leaveButton.addActionListener(actionListener); }
     public void prepareLoadChats() {
         groupsListModel.clear();
         dmsListModel.clear();

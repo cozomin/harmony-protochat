@@ -4,6 +4,7 @@ import harmony.proto.client.PaneSelector;
 import harmony.proto.client.backend.WebSocketClient;
 import harmony.proto.client.ui.InboxPanel;
 import harmony.proto.dto.ChatDTO;
+import harmony.proto.dto.res.LeaveGroupRes;
 
 import javax.swing.*;
 import java.util.List;
@@ -75,6 +76,10 @@ public class InboxPresenter {
             inboxView.getMembersList().clearSelection();
             inboxView.showGroupMembersPanel();
             loadChatMembers();
+        });
+
+        inboxView.setLeaveButtonAction( e -> {
+            leaveGroup();
         });
 
         inboxView.setInterestsButtonAction( e -> {
@@ -193,6 +198,37 @@ public class InboxPresenter {
                         }
                     } else {
                         System.out.println("Failed to load group details");
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    public void leaveGroup(){
+        ChatDTO selectedGroup = inboxView.getGroupsList().getSelectedValue();
+        if (selectedGroup == null) {
+            return;
+        }
+
+        SwingWorker<LeaveGroupRes, Void> worker = new SwingWorker<>() {
+            @Override
+            protected LeaveGroupRes doInBackground() throws Exception {
+                return client.leaveGroup(selectedGroup.getChatName());
+            }
+
+            @Override
+            protected void done() {
+                try {
+
+                    LeaveGroupRes res = get();
+
+                    if (res != null && res.isSuccess()) {
+                        loadChats();
+                    } else {
+                        System.out.println("Failed to leave group");
                     }
                 } catch (Exception e) {
                     e.printStackTrace();

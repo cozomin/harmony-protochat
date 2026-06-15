@@ -46,6 +46,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
     private volatile CompletableFuture<InterestsRes> interestsFuture;
     private volatile CompletableFuture<AIRecommendGroupsRes> aiGroupFuture;
     private volatile CompletableFuture<JoinGroupRes> joinGroupFuture;
+    private volatile CompletableFuture<LeaveGroupRes> leaveGroupFuture;
 
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
@@ -102,6 +103,7 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
         interestsFuture = new CompletableFuture<>();
     }
     public synchronized void prepareForJoinGroup() { joinGroupFuture = new CompletableFuture<>(); }
+    public synchronized void prepareForLeaveGroup(){ leaveGroupFuture = new CompletableFuture<>(); }
 
     public LoginRes awaitLoginResponse() throws Exception {
         return loginFuture.get(10, TimeUnit.SECONDS);
@@ -137,6 +139,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
 
     public JoinGroupRes awaitJoinGroupResponse() throws Exception {
         return joinGroupFuture.get(10, TimeUnit.SECONDS);
+    }
+    public LeaveGroupRes awaitLeaveGroupResponse() throws Exception {
+        return leaveGroupFuture.get(10, TimeUnit.SECONDS);
     }
 
     @Override
@@ -243,6 +248,9 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                 }
                 else if (dto instanceof JoinGroupRes res) {
                     if (joinGroupFuture != null) joinGroupFuture.complete(res);
+                }
+                else if (dto instanceof LeaveGroupRes res){
+                    if (leaveGroupFuture != null) leaveGroupFuture.complete(res);
                 }
 
             } catch (Exception e) {

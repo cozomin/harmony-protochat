@@ -27,7 +27,7 @@ public class ChatDao {
         }
     }
 
-//TODO: every try() block is useless btw lmao
+//TODO: every try() block is useless
 
     public List<String> findUsersInChat(long chatID) throws SQLException{
         String sql = "select cm.memberid \n" +
@@ -241,6 +241,19 @@ public class ChatDao {
              PreparedStatement ps = con.prepareStatement(sql)) {
             ps.setString(1, username);
             ps.setString(2, groupName);
+            ps.executeUpdate();
+        }
+    }
+
+    public void leaveGroupByName(String groupName, String username) throws SQLException {
+        String sql = """
+            DELETE from chat_member where 
+            chatid = (select chatID from chat where chatName=?) and memberid = ?;
+        """;
+        try (Connection con = dataSource.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(2, username);
+            ps.setString(1, groupName);
             ps.executeUpdate();
         }
     }
