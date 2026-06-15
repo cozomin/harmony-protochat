@@ -3,6 +3,7 @@
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/src/main/java/harmony/proto/dao/MessageDao.java" dialect="PostgreSQL" />
     <file url="file://$PROJECT_DIR$/src/main/java/harmony/proto/dao/UserDao.java" dialect="PostgreSQL" />
+    <file url="file://$PROJECT_DIR$/src/test/resources/harmony.sql" dialect="PostgreSQL" />
     <file url="PROJECT" dialect="PostgreSQL" />
   </component>
 </project>

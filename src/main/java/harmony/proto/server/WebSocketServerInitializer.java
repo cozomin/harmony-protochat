@@ -29,6 +29,6 @@ public class WebSocketServerInitializer extends ChannelInitializer<SocketChannel
         // 5. Our custom handler for chat messages
         pipeline.addLast(new WebSocketServerHandler());
         //assigns our handler to the channel that has just been created, triggering handlerAdded
-        pipeline.addLast(new DatabaseHandler());
+//        pipeline.addLast(new DatabaseHandler());
     }
 }

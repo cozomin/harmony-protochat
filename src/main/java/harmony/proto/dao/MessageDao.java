@@ -16,39 +16,52 @@ public class MessageDao {
     }
 
     public void save(MessageDTO messageDTO) throws SQLException {
+        if (messageDTO.getSentAt() == null) {
+            messageDTO.setSentAt(Instant.now());
+        }
+
         String insertMessage = """
                 insert into hm_message(senderID, chatID, message_content, sent_at, message_type)
                 values (?, ?, ?, ?, ?::mess_enum)
                 returning messID
                 """;
+
         //message with parameters
         String updateChat = "update chat set updated_at = ? where chatID = ?";
 
         try (Connection con = dataSource.getConnection()) {
             con.setAutoCommit(false);
-            //set message parameters
-            try (PreparedStatement ps = con.prepareStatement(insertMessage)) {
-                ps.setString(1, messageDTO.getSenderId());
-                ps.setLong(2, messageDTO.getChatId());
-                ps.setString(3, messageDTO.getContent());
-                ps.setTimestamp(4, Timestamp.from(messageDTO.getSentAt()));
-                ps.setString(5, messageDTO.getMessageType());
+            try {
+                //set message parameters
+                try (PreparedStatement ps = con.prepareStatement(insertMessage)) {
+                    ps.setString(1, messageDTO.getSenderId());
+                    ps.setLong(2, messageDTO.getChatId());
+                    ps.setString(3, messageDTO.getContent());
+                    ps.setTimestamp(4, Timestamp.from(messageDTO.getSentAt()));
+                    ps.setString(5, messageDTO.getMessageType());
 
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        messageDTO.setMessId(rs.getLong("messID"));
+                    try (ResultSet rs = ps.executeQuery()) {
+                        if (rs.next()) {
+                            messageDTO.setMessId(rs.getLong("messID"));
+                        }
                     }
                 }
-            }
-            //set updated_at for the respective chat
-            try (PreparedStatement ps = con.prepareStatement(updateChat)) {
-                ps.setTimestamp(1, Timestamp.from(messageDTO.getSentAt()));
-                ps.setLong(2, messageDTO.getChatId());
-                ps.executeUpdate();
-            }
+                //set updated_at for the respective chat
+                try (PreparedStatement ps = con.prepareStatement(updateChat)) {
+                    ps.setTimestamp(1, Timestamp.from(messageDTO.getSentAt()));
+                    ps.setLong(2, messageDTO.getChatId());
+                    ps.executeUpdate();
+                }
 
-            con.commit();
+                con.commit();
+            }catch (SQLException e) {
+                    con.rollback();
+                    throw e;
+            } finally {
+                con.setAutoCommit(true);
+            }
         }
+
     }
 
     public List<MessageDTO> findRecentMessages(Long chatId, int limit) throws SQLException {
