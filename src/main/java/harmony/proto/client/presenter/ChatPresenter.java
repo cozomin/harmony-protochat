@@ -18,6 +18,8 @@ public class ChatPresenter {
     private final InboxPresenter inboxPresenter;
     private ChatDTO activeChat;
 
+    private boolean refresh = false;
+
     private final DateTimeFormatter timeFormatter =
             DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm")
                     .withZone(ZoneId.systemDefault());
@@ -70,20 +72,26 @@ public class ChatPresenter {
                 // Check if the incoming message belongs to the currently open chat
                 activeChat = inboxPresenter.getActiveChat();
 
-                if (activeChat != null && activeChat.getChatID().equals(message.getChatId())) {
-                    String time = message.getSentAt() == null ? "Now" : timeFormatter.format(message.getSentAt());
-                    String shownMessage = "[" + time + "] "
-                            + message.getSenderId() + ": "
-                            + message.getContent()
-                            + "\n";
-
-                    boolean isMine = message.getSenderId().equals(client.getCurrentUsername());
-                    chatView.showMessage(message, isMine);
-
-                    attachMessageActions(message, isMine);
+                if (refresh){
+                    loadMessages(activeChat);
+                    refresh = false;
                 }
+
                 else {
-                    // In app notification goes here
+                    if (activeChat != null && activeChat.getChatID().equals(message.getChatId())) {
+                        String time = message.getSentAt() == null ? "Now" : timeFormatter.format(message.getSentAt());
+                        String shownMessage = "[" + time + "] "
+                                + message.getSenderId() + ": "
+                                + message.getContent()
+                                + "\n";
+
+                        boolean isMine = message.getSenderId().equals(client.getCurrentUsername());
+                        chatView.showMessage(message, isMine);
+
+                        attachMessageActions(message, isMine);
+                    } else {
+                        // In app notification goes here
+                    }
                 }
             });
         });
@@ -151,6 +159,7 @@ public class ChatPresenter {
                         MessageDTO message = new MessageDTO();
                         message.setContent("No messages found");
                         chatView.showMessage(message, false);
+                        refresh = true;
                     }
                 } catch(Exception e){
 //                    chatView.showMessage(e.getMessage());

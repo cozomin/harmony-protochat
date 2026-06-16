@@ -1,5 +1,6 @@
 package harmony.proto.client.ui;
 
+import com.formdev.flatlaf.extras.FlatSVGIcon;
 import harmony.proto.client.PaneSelector;
 import harmony.proto.client.ui.friends.FriendsPanel;
 import harmony.proto.dto.ChatDTO;
@@ -64,6 +65,19 @@ public class InboxPanel extends JPanel {
         topBar.setLayout(new BoxLayout(topBar, BoxLayout.X_AXIS));
         topBar.add(friendsButton);
         topBar.add(interestsButton);
+        topBar.add(Box.createHorizontalGlue());
+
+        // Logo
+        JLabel logoLabel = new JLabel();
+        try {
+            FlatSVGIcon logoIcon = new FlatSVGIcon("img/icons/logo.svg", 100, 100);
+            logoLabel.setIcon(logoIcon);
+        } catch (Exception e) {
+            logoLabel.setText("Harmony");
+            System.err.println("Warning: logo.svg not found.");
+        }
+        topBar.add(logoLabel);
+
         topBar.add(Box.createHorizontalGlue());
         topBar.add(loadButton);
         topBar.add(logoutButton);
