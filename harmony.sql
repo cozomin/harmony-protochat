@@ -7,7 +7,6 @@ drop table if exists hm_user;
 
 --TODO: remake into pending and accepted, incoming is useless
 create type status_enm as enum (
-  'incoming', --user2 to user1
   'outgoing', --user1 to user2
   'accepted'
 );
@@ -121,10 +120,10 @@ delete from chat_member where chatid = (select chatID from chat where chatName='
 create table hm_message(
 	messID bigserial,
 		CONSTRAINT pk_messID PRIMARY KEY (messID),
-	senderID varchar(64),
+	senderID varchar(64) NOT NULL,
 		CONSTRAINT fk_senderID FOREIGN KEY (senderID)
 			references hm_user(username),
-	chatID bigint,
+	chatID bigint NOT NULL,
 		CONSTRAINT fk_mess_chatID FOREIGN KEY (chatID)
 			references chat(chatID),
 	message_content text,
