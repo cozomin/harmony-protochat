@@ -262,6 +262,11 @@ public class WebSocketClientHandler extends SimpleChannelInboundHandler<Object> 
                 if (messageFuture != null && !messageFuture.isDone()) messageFuture.completeExceptionally(e);
                 if (friendOpFuture != null && !friendOpFuture.isDone()) friendOpFuture.completeExceptionally(e);
                 if (chatMembersFuture != null && !chatMembersFuture.isDone()) chatMembersFuture.completeExceptionally(e);
+                if (aiPolishFuture != null && !aiPolishFuture.isDone()) aiPolishFuture.completeExceptionally(e);
+                if (aiGroupFuture != null && !aiGroupFuture.isDone()) aiGroupFuture.completeExceptionally(e);
+                if (interestsFuture != null && !interestsFuture.isDone())  interestsFuture.completeExceptionally(e);
+                if (joinGroupFuture  != null && !joinGroupFuture.isDone())  joinGroupFuture.completeExceptionally(e);
+                if (leaveGroupFuture != null && !leaveGroupFuture.isDone())  leaveGroupFuture.completeExceptionally(e);
             }
 
         } else if (frame instanceof PongWebSocketFrame) {
